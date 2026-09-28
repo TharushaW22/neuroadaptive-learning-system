@@ -1,0 +1,11 @@
+#LangChain Packages
+langchain>=0.1.0
+langchain-community>=0.0.10
+
+#Local llm via ollama
+ollama>=0.1.0
+
+#web interface 
+streamlit>=1.30.0
+
+python-dotenv>=1.0.0 

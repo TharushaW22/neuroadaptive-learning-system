@@ -1,8 +1,3 @@
-"""
-app.py — MD-AP2L Streamlit Chat Tutor
-Run: streamlit run app.py
-"""
-import os
 import streamlit as st
 
 from schemas import (CognitiveState, StudentTraits, LearningStyle, Interest,
@@ -10,9 +5,22 @@ from schemas import (CognitiveState, StudentTraits, LearningStyle, Interest,
 from policy_service import PolicyService
 from llm.prompts import build_messages
 from llm.client import chat, LLMUnavailable
-from evaluation.sus import score as sus_score
 from comparison import run as run_comparison
 from config import Config
+
+# --- Import PRIOR_SCALAR from student_profile ---
+try:
+    from student_profile import PRIOR_SCALAR
+except ImportError:
+    PRIOR_SCALAR = {"Beginner": 0.0, "Intermediate": 0.5, "Advanced": 1.0}
+
+# Formula: pre_score = 30 + PRIOR_SCALAR[prior] * 50
+#   Beginner     (0.0) -> 30
+#   Intermediate (0.5) -> 55
+#   Advanced     (1.0) -> 80
+def pre_score_from_prior(prior_value: str) -> float:
+    return 30.0 + PRIOR_SCALAR[prior_value] * 50.0
+
 
 st.set_page_config(page_title=Config.APP_TITLE, page_icon="🧠",
                    layout="wide", initial_sidebar_state="expanded")
@@ -57,38 +65,26 @@ st.markdown("""
         margin-bottom: 10px;
     }
     .strategy-chip {
-        display: inline-block;
-        background: rgba(96, 165, 250, 0.18);
-        color: #93c5fd;
-        padding: 3px 10px;
-        border-radius: 12px;
-        font-size: 12px;
-        font-weight: 600;
-        margin: 2px 4px 2px 0;
+        display: inline-block; background: rgba(96, 165, 250, 0.18);
+        color: #93c5fd; padding: 3px 10px; border-radius: 12px;
+        font-size: 12px; font-weight: 600; margin: 2px 4px 2px 0;
     }
     .prompt-chip {
-        display: inline-block;
-        background: rgba(52, 211, 153, 0.18);
-        color: #6ee7b7;
-        padding: 3px 10px;
-        border-radius: 12px;
-        font-size: 12px;
-        font-weight: 600;
-        margin: 2px 4px 2px 0;
+        display: inline-block; background: rgba(52, 211, 153, 0.18);
+        color: #6ee7b7; padding: 3px 10px; border-radius: 12px;
+        font-size: 12px; font-weight: 600; margin: 2px 4px 2px 0;
     }
     .algo-chip {
-        display: inline-block;
-        background: rgba(168, 85, 247, 0.18);
-        color: #d8b4fe;
-        padding: 3px 10px;
-        border-radius: 12px;
-        font-size: 12px;
-        font-weight: 600;
-        margin: 2px 4px 2px 0;
+        display: inline-block; background: rgba(168, 85, 247, 0.18);
+        color: #d8b4fe; padding: 3px 10px; border-radius: 12px;
+        font-size: 12px; font-weight: 600; margin: 2px 4px 2px 0;
     }
 </style>
 """, unsafe_allow_html=True)
 
+# ============================================================
+# SESSION STATE
+# ============================================================
 if "svc" not in st.session_state:
     st.session_state.svc = PolicyService()
 if "messages" not in st.session_state:
@@ -97,8 +93,8 @@ if "traits" not in st.session_state:
     st.session_state.traits = None
 if "pre_score" not in st.session_state:
     st.session_state.pre_score = None
-if "awaiting_post" not in st.session_state:
-    st.session_state.awaiting_post = False
+if "posttest_open" not in st.session_state:
+    st.session_state.posttest_open = False
 if "last_decision" not in st.session_state:
     st.session_state.last_decision = None
 if "last_state" not in st.session_state:
@@ -107,13 +103,19 @@ if "comparison_done" not in st.session_state:
     st.session_state.comparison_done = False
 if "winner_name" not in st.session_state:
     st.session_state.winner_name = None
+if "interactions" not in st.session_state:
+    st.session_state.interactions = 0
 
+# ============================================================
+# SIDEBAR
+# ============================================================
 with st.sidebar:
     st.markdown("## 🧠 MD-AP2L")
     st.caption("Multi-Dimensional Adaptive Pedagogical Policy Learning · J26-DS-333")
     st.caption(f"`{Config.summary()}`")
     st.divider()
 
+    # --- Profile ---
     st.subheader("1️⃣ Learner Profile")
     with st.form("questionnaire"):
         style = st.selectbox("How do you learn best?", [e.value for e in LearningStyle])
@@ -123,16 +125,32 @@ with st.sidebar:
         motivation = st.selectbox("Motivation right now?", [e.value for e in Motivation])
         emotion = st.selectbox("How are you feeling now?", [e.value for e in Emotion])
         saved = st.form_submit_button("💾 Save profile")
+
     if saved:
         st.session_state.traits = StudentTraits(
             style=LearningStyle(style), interest=Interest(interest),
             goal=Goal(goal), prior=Prior(prior),
             motivation=Motivation(motivation), emotion=Emotion(emotion))
+        # --- Derive pre-test score from PRIOR_SCALAR ---
+        st.session_state.pre_score = pre_score_from_prior(prior)
         st.success("Profile saved.")
+        st.info(
+            f"📊 Prior knowledge: **{prior}** "
+            f"(scalar = {PRIOR_SCALAR[prior]:.2f}) → "
+            f"estimated pre-test score: **{st.session_state.pre_score:.0f}%**"
+        )
+
     if st.session_state.traits is None:
         st.warning("⚠️ Save your profile before chatting.")
+    else:
+        st.caption(
+            f"Pre-test baseline: **{st.session_state.pre_score:.0f}%** "
+            f"(from PRIOR_SCALAR)"
+        )
 
     st.divider()
+
+    # --- Cognitive state ---
     st.subheader("2️⃣ Cognitive State")
     st.caption("**SIMULATED** — from Components 1 & 2 (EEG + CV) in the full system.")
     attention = st.slider("🎯 Attention", 0.0, 1.0, 0.65, 0.05)
@@ -142,13 +160,22 @@ with st.sidebar:
     workload  = st.slider("📊 Workload",  0.0, 1.0, 0.55, 0.05)
 
     st.divider()
-    st.subheader("3️⃣ Pre-Test")
-    pre_input = st.number_input("Pre-test score (0–100)", 0, 100, 45, 1)
-    if st.button("Set pre-test score"):
-        st.session_state.pre_score = float(pre_input)
-        st.success(f"Pre-test set to {pre_input}.")
+
+    # --- Session status + post-test trigger ---
+    st.subheader("3️⃣ Session Status")
+    st.metric("💬 Interactions", st.session_state.interactions)
+
+    if st.session_state.interactions > 0 and not st.session_state.posttest_open:
+        st.markdown("**Finished studying?**")
+        if st.button("✅ Take the post-test"):
+            st.session_state.posttest_open = True
+            st.rerun()
+    elif st.session_state.posttest_open:
+        st.info("Post-test is open — see the main panel.")
 
     st.divider()
+
+    # --- Algorithm comparison ---
     st.subheader("4️⃣ Algorithm Comparison")
     if not st.session_state.comparison_done:
         if st.button("▶ Run 4-Algorithm Comparison"):
@@ -161,12 +188,17 @@ with st.sidebar:
         st.success(f"Winner (computed): {st.session_state.winner_name}")
 
     st.divider()
+
     if st.button("🗑 Clear conversation"):
         st.session_state.messages = []
         st.session_state.last_decision = None
-        st.session_state.awaiting_post = False
+        st.session_state.posttest_open = False
+        st.session_state.interactions = 0
         st.rerun()
 
+# ============================================================
+# MAIN AREA
+# ============================================================
 st.title("🧬 MD-AP2L — Adaptive Tutor")
 st.caption("Chat with a tutor that adapts its teaching strategy to *how you feel* and *who you are*.")
 
@@ -174,6 +206,9 @@ if st.session_state.traits is None:
     st.info("👈 Complete the questionnaire in the sidebar to begin.")
     st.stop()
 
+# ============================================================
+# CHAT HISTORY
+# ============================================================
 for msg in st.session_state.messages:
     with st.chat_message(msg["role"]):
         st.markdown(msg["content"])
@@ -187,8 +222,12 @@ for msg in st.session_state.messages:
             with st.expander("Why this decision?"):
                 st.json(m["rationale"])
 
-if not st.session_state.awaiting_post:
+# ============================================================
+# CHAT INPUT 
+# ============================================================
+if not st.session_state.posttest_open:
     user_input = st.chat_input("Ask a question, e.g. 'Explain mitosis'")
+
     if user_input:
         st.session_state.messages.append({"role": "user", "content": user_input})
         with st.chat_message("user"):
@@ -238,37 +277,82 @@ if not st.session_state.awaiting_post:
                         "prompt": decision["prompt"],
                         "rationale": decision["rationale"],
                     }})
-                st.session_state.awaiting_post = True
+                st.session_state.interactions += 1
                 st.rerun()
 
-if st.session_state.awaiting_post:
+    if st.session_state.interactions > 0:
+        st.caption("💡 Tip: Keep asking questions. When you're done, click **✅ Take the post-test** in the sidebar.")
+    else:
+        st.caption("💡 Tip: Try 'Explain DNA' or 'What is mitosis?'")
+
+# ============================================================
+# POST-TEST (only when user opened it from the sidebar)
+# ============================================================
+if st.session_state.posttest_open:
     st.divider()
     st.subheader("📊 Post-Test & Learning Gain")
-    if st.session_state.pre_score is None:
-        st.warning("Set the pre-test score in the sidebar first.")
-    else:
-        post_input = st.number_input("Post-test score (0–100)", 0, 100, 85, 1)
+    st.caption(
+        f"Pre-test baseline (from PRIOR_SCALAR): **{st.session_state.pre_score:.0f}%**"
+    )
+
+    with st.form("posttest"):
+        st.markdown("**Q1.** What is the main function of DNA?")
+        q1 = st.radio("Q1", ["Store genetic information", "Produce energy",
+                             "Build cell walls", "Transport oxygen"],
+                      label_visibility="collapsed")
+
+        st.markdown("**Q2.** During which phase does DNA replication occur?")
+        q2 = st.radio("Q2", ["Prophase", "S phase", "Anaphase", "Telophase"],
+                      label_visibility="collapsed")
+
+        st.markdown("**Q3.** Which base pairs with Adenine in DNA?")
+        q3 = st.radio("Q3", ["Guanine", "Cytosine", "Thymine", "Uracil"],
+                      label_visibility="collapsed")
+
         c1, c2 = st.columns(2)
         with c1:
-            if st.button("✅ Submit result"):
-                sig = EvaluationSignal(
-                    pre_score=st.session_state.pre_score,
-                    post_score=float(post_input)).compute()
-                st.success(
-                    f"Learning gain = **{sig.learning_gain:.2f}** "
-                    f"| normalized gain = **{sig.normalized_gain:.2f}**")
-                d = st.session_state.last_decision
-                s = st.session_state.last_state
-                st.session_state.svc.feedback(
-                    s, st.session_state.traits,
-                    d["strategy"], d["prompt"], sig.learning_gain)
-                st.info("Policy updated — the system will adapt better next time.")
-                st.session_state.awaiting_post = False
-                st.rerun()
+            submitted = st.form_submit_button("✅ Submit post-test")
         with c2:
-            if st.button("⏭ Skip (no update)"):
-                st.session_state.awaiting_post = False
-                st.rerun()
+            skip = st.form_submit_button("⏭ Skip (no update)")
 
+    if submitted:
+        correct = sum([
+            q1 == "Store genetic information",
+            q2 == "S phase",
+            q3 == "Thymine",
+        ])
+        post_score = correct / 3 * 100
+
+        sig = EvaluationSignal(
+            pre_score=st.session_state.pre_score,
+            post_score=post_score).compute()
+
+        st.success(
+            f"Post-test: **{post_score:.0f}%** | "
+            f"Learning gain: **{sig.learning_gain:.2f}** | "
+            f"Normalized gain: **{sig.normalized_gain:.2f}**"
+        )
+
+        d = st.session_state.last_decision
+        s = st.session_state.last_state
+        if d and s:
+            st.session_state.svc.feedback(
+                s, st.session_state.traits,
+                d["strategy"], d["prompt"], sig.learning_gain)
+            st.info("Policy updated — the system will adapt better next time.")
+
+        st.session_state.posttest_open = False
+        st.balloons()
+
+    if skip:
+        st.session_state.posttest_open = False
+        st.rerun()
+
+# ============================================================
+# DECISION TRACE
+# ============================================================
 with st.expander("🔍 Decision trace (last 10)"):
-    st.json(st.session_state.svc.trace[-10:])
+    if st.session_state.svc and st.session_state.svc.trace:
+        st.json(st.session_state.svc.trace[-10:])
+    else:
+        st.caption("No decisions logged yet.")

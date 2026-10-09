@@ -1,3 +1,4 @@
+
 import streamlit as st
 
 from schemas import (CognitiveState, StudentTraits, LearningStyle, Interest,
@@ -8,20 +9,206 @@ from llm.client import chat, LLMUnavailable
 from comparison import run as run_comparison
 from config import Config
 
-# --- Import PRIOR_SCALAR from student_profile ---
 try:
     from student_profile import PRIOR_SCALAR
 except ImportError:
     PRIOR_SCALAR = {"Beginner": 0.0, "Intermediate": 0.5, "Advanced": 1.0}
 
-# Formula: pre_score = 30 + PRIOR_SCALAR[prior] * 50
-#   Beginner     (0.0) -> 30
-#   Intermediate (0.5) -> 55
-#   Advanced     (1.0) -> 80
+"""Beginner -> 30, Intermediate -> 55, Advanced -> 80."""
 def pre_score_from_prior(prior_value: str) -> float:
     return 30.0 + PRIOR_SCALAR[prior_value] * 50.0
 
 
+# ============================================================
+# TOPIC QUESTION BANK (used to build the post-test)
+# ============================================================
+TOPIC_KEYWORDS = {
+    "dna":            ["dna", "deoxyribonucleic", "nucleotide", "base pair", "double helix"],
+    "rna":            ["rna", "ribonucleic", "mrna", "trna", "transcription", "translation"],
+    "mitosis":        ["mitosis", "cell division", "prophase", "metaphase", "anaphase", "telophase"],
+    "meiosis":        ["meiosis", "gamete", "crossing over", "haploid"],
+    "photosynthesis": ["photosynthesis", "chloroplast", "calvin", "light reaction"],
+    "respiration":    ["respiration", "glycolysis", "krebs", "atp", "mitochondria"],
+    "blood":          ["blood", "red blood", "rbc", "hemoglobin", "circulation",
+                       "white blood", "platelet"],
+    "protein":        ["protein", "amino acid", "ribosome", "polypeptide"],
+    "enzyme":         ["enzyme", "catalyst", "substrate", "active site"],
+}
+
+TOPIC_QUESTION_BANK = {
+    "dna": {
+        "name": "DNA",
+        "questions": [
+            {"q": "What is the main function of DNA?",
+             "options": ["Store genetic information", "Produce energy",
+                         "Build cell walls", "Transport oxygen"],
+             "correct": "Store genetic information"},
+            {"q": "During which phase of the cell cycle does DNA replication occur?",
+             "options": ["Prophase", "S phase", "Anaphase", "Telophase"],
+             "correct": "S phase"},
+            {"q": "Which base pairs with Adenine in DNA?",
+             "options": ["Guanine", "Cytosine", "Thymine", "Uracil"],
+             "correct": "Thymine"},
+        ],
+    },
+    "rna": {
+        "name": "RNA",
+        "questions": [
+            {"q": "What sugar is found in RNA?",
+             "options": ["Deoxyribose", "Ribose", "Glucose", "Fructose"],
+             "correct": "Ribose"},
+            {"q": "Which base is found in RNA but NOT in DNA?",
+             "options": ["Adenine", "Thymine", "Uracil", "Guanine"],
+             "correct": "Uracil"},
+            {"q": "What is the main role of mRNA?",
+             "options": ["Carry amino acids", "Carry genetic message from DNA to ribosome",
+                         "Form the ribosome", "Store energy"],
+             "correct": "Carry genetic message from DNA to ribosome"},
+        ],
+    },
+    "mitosis": {
+        "name": "Mitosis",
+        "questions": [
+            {"q": "What is the main result of mitosis?",
+             "options": ["Two identical cells", "Four different cells",
+                         "One cell", "No cells"],
+             "correct": "Two identical cells"},
+            {"q": "During which phase do chromosomes align at the cell's center?",
+             "options": ["Prophase", "Metaphase", "Anaphase", "Telophase"],
+             "correct": "Metaphase"},
+            {"q": "What is the correct order of mitosis stages?",
+             "options": ["Prophase, Metaphase, Anaphase, Telophase",
+                         "Metaphase, Prophase, Telophase, Anaphase",
+                         "Anaphase, Metaphase, Prophase, Telophase",
+                         "Telophase, Anaphase, Metaphase, Prophase"],
+             "correct": "Prophase, Metaphase, Anaphase, Telophase"},
+        ],
+    },
+    "meiosis": {
+        "name": "Meiosis",
+        "questions": [
+            {"q": "How many cells does meiosis produce?",
+             "options": ["Two", "Three", "Four", "Eight"],
+             "correct": "Four"},
+            {"q": "What is the main purpose of meiosis?",
+             "options": ["Growth", "Repair", "Produce gametes", "Produce energy"],
+             "correct": "Produce gametes"},
+            {"q": "What is 'crossing over'?",
+             "options": ["Chromosomes condensing", "DNA replicating",
+                         "Homologous chromosomes exchanging segments", "Cells dividing"],
+             "correct": "Homologous chromosomes exchanging segments"},
+        ],
+    },
+    "photosynthesis": {
+        "name": "Photosynthesis",
+        "questions": [
+            {"q": "Where does photosynthesis occur?",
+             "options": ["Mitochondria", "Chloroplast", "Nucleus", "Ribosome"],
+             "correct": "Chloroplast"},
+            {"q": "What gas is released during photosynthesis?",
+             "options": ["Carbon dioxide", "Nitrogen", "Oxygen", "Hydrogen"],
+             "correct": "Oxygen"},
+            {"q": "What are the main inputs of photosynthesis?",
+             "options": ["Glucose and oxygen", "Carbon dioxide and water",
+                         "ATP and glucose", "Nitrogen and water"],
+             "correct": "Carbon dioxide and water"},
+        ],
+    },
+    "respiration": {
+        "name": "Cellular respiration",
+        "questions": [
+            {"q": "What is the main product of cellular respiration?",
+             "options": ["Glucose", "ATP", "Oxygen", "DNA"],
+             "correct": "ATP"},
+            {"q": "Where does the Krebs cycle occur?",
+             "options": ["Cytoplasm", "Nucleus", "Mitochondrial matrix", "Ribosome"],
+             "correct": "Mitochondrial matrix"},
+            {"q": "What gas is consumed during cellular respiration?",
+             "options": ["Oxygen", "Nitrogen", "Carbon dioxide", "Hydrogen"],
+             "correct": "Oxygen"},
+        ],
+    },
+    "blood": {
+        "name": "Red blood cells and circulation",
+        "questions": [
+            {"q": "What is the main function of red blood cells?",
+             "options": ["Transport oxygen", "Produce hormones",
+                         "Fight infection", "Digest food"],
+             "correct": "Transport oxygen"},
+            {"q": "What molecule inside red blood cells carries oxygen?",
+             "options": ["Hemoglobin", "Insulin", "Collagen", "Keratin"],
+             "correct": "Hemoglobin"},
+            {"q": "What is the approximate lifespan of a red blood cell?",
+             "options": ["120 days", "10 days", "1 year", "24 hours"],
+             "correct": "120 days"},
+        ],
+    },
+    "protein": {
+        "name": "Protein synthesis",
+        "questions": [
+            {"q": "What monomers make up proteins?",
+             "options": ["Fatty acids", "Amino acids", "Nucleotides", "Monosaccharides"],
+             "correct": "Amino acids"},
+            {"q": "Where does translation occur?",
+             "options": ["Nucleus", "Ribosome", "Mitochondria", "Golgi apparatus"],
+             "correct": "Ribosome"},
+            {"q": "Which molecule carries amino acids to the ribosome?",
+             "options": ["mRNA", "tRNA", "rRNA", "DNA"],
+             "correct": "tRNA"},
+        ],
+    },
+    "enzyme": {
+        "name": "Enzymes",
+        "questions": [
+            {"q": "What does an enzyme do to a chemical reaction?",
+             "options": ["Slows it down", "Speeds it up",
+                         "Stops it", "Reverses it"],
+             "correct": "Speeds it up"},
+            {"q": "What is the region where the substrate binds called?",
+             "options": ["Allosteric site", "Active site",
+                         "Binding pocket", "Receptor"],
+             "correct": "Active site"},
+            {"q": "What happens to most enzymes at very high temperatures?",
+             "options": ["They speed up", "They denature",
+                         "They double", "They stay the same"],
+             "correct": "They denature"},
+        ],
+    },
+    "general": {
+        "name": "General biology",
+        "questions": [
+            {"q": "What is the basic unit of life?",
+             "options": ["Atom", "Molecule", "Cell", "Organ"],
+             "correct": "Cell"},
+            {"q": "What organelle produces most of the cell's ATP?",
+             "options": ["Nucleus", "Mitochondria", "Ribosome", "Golgi"],
+             "correct": "Mitochondria"},
+            {"q": "What is the process by which cells make proteins called?",
+             "options": ["Photosynthesis", "Respiration", "Protein synthesis", "Replication"],
+             "correct": "Protein synthesis"},
+        ],
+    },
+}
+
+
+def detect_topic(messages) -> str:
+    """Scan user messages and return the best-matching topic key."""
+    user_text = " ".join(
+        m["content"].lower() for m in messages if m.get("role") == "user"
+    )
+    if not user_text.strip():
+        return "general"
+    scores = {
+        topic: sum(1 for kw in kws if kw in user_text)
+        for topic, kws in TOPIC_KEYWORDS.items()
+    }
+    best = max(scores, key=scores.get)
+    return best if scores[best] > 0 else "general"
+
+
+# ============================================================
+# PAGE SETUP
+# ============================================================
 st.set_page_config(page_title=Config.APP_TITLE, page_icon="🧠",
                    layout="wide", initial_sidebar_state="expanded")
 
@@ -95,6 +282,10 @@ if "pre_score" not in st.session_state:
     st.session_state.pre_score = None
 if "posttest_open" not in st.session_state:
     st.session_state.posttest_open = False
+if "posttest_questions" not in st.session_state:
+    st.session_state.posttest_questions = None
+if "posttest_topic" not in st.session_state:
+    st.session_state.posttest_topic = None
 if "last_decision" not in st.session_state:
     st.session_state.last_decision = None
 if "last_state" not in st.session_state:
@@ -115,7 +306,7 @@ with st.sidebar:
     st.caption(f"`{Config.summary()}`")
     st.divider()
 
-    # --- Profile ---
+    # 1. Profile
     st.subheader("1️⃣ Learner Profile")
     with st.form("questionnaire"):
         style = st.selectbox("How do you learn best?", [e.value for e in LearningStyle])
@@ -131,7 +322,6 @@ with st.sidebar:
             style=LearningStyle(style), interest=Interest(interest),
             goal=Goal(goal), prior=Prior(prior),
             motivation=Motivation(motivation), emotion=Emotion(emotion))
-        # --- Derive pre-test score from PRIOR_SCALAR ---
         st.session_state.pre_score = pre_score_from_prior(prior)
         st.success("Profile saved.")
         st.info(
@@ -143,14 +333,11 @@ with st.sidebar:
     if st.session_state.traits is None:
         st.warning("⚠️ Save your profile before chatting.")
     else:
-        st.caption(
-            f"Pre-test baseline: **{st.session_state.pre_score:.0f}%** "
-            f"(from PRIOR_SCALAR)"
-        )
+        st.caption(f"Pre-test baseline: **{st.session_state.pre_score:.0f}%** (from PRIOR_SCALAR)")
 
     st.divider()
 
-    # --- Cognitive state ---
+    # 2. Cognitive state
     st.subheader("2️⃣ Cognitive State")
     st.caption("**SIMULATED** — from Components 1 & 2 (EEG + CV) in the full system.")
     attention = st.slider("🎯 Attention", 0.0, 1.0, 0.65, 0.05)
@@ -161,13 +348,20 @@ with st.sidebar:
 
     st.divider()
 
-    # --- Session status + post-test trigger ---
+    # 3. Session status
     st.subheader("3️⃣ Session Status")
     st.metric("💬 Interactions", st.session_state.interactions)
+
+    current_topic = detect_topic(st.session_state.messages)
+    if current_topic != "general":
+        st.caption(f"Detected topic: **{TOPIC_QUESTION_BANK[current_topic]['name']}**")
 
     if st.session_state.interactions > 0 and not st.session_state.posttest_open:
         st.markdown("**Finished studying?**")
         if st.button("✅ Take the post-test"):
+            topic = detect_topic(st.session_state.messages)
+            st.session_state.posttest_topic = topic
+            st.session_state.posttest_questions = TOPIC_QUESTION_BANK[topic]["questions"]
             st.session_state.posttest_open = True
             st.rerun()
     elif st.session_state.posttest_open:
@@ -175,7 +369,7 @@ with st.sidebar:
 
     st.divider()
 
-    # --- Algorithm comparison ---
+    # 4. Algorithm comparison
     st.subheader("4️⃣ Algorithm Comparison")
     if not st.session_state.comparison_done:
         if st.button("▶ Run 4-Algorithm Comparison"):
@@ -188,16 +382,16 @@ with st.sidebar:
         st.success(f"Winner (computed): {st.session_state.winner_name}")
 
     st.divider()
-
     if st.button("🗑 Clear conversation"):
         st.session_state.messages = []
         st.session_state.last_decision = None
         st.session_state.posttest_open = False
+        st.session_state.posttest_questions = None
         st.session_state.interactions = 0
         st.rerun()
 
 # ============================================================
-# MAIN AREA
+# MAIN
 # ============================================================
 st.title("🧬 MD-AP2L — Adaptive Tutor")
 st.caption("Chat with a tutor that adapts its teaching strategy to *how you feel* and *who you are*.")
@@ -206,9 +400,7 @@ if st.session_state.traits is None:
     st.info("👈 Complete the questionnaire in the sidebar to begin.")
     st.stop()
 
-# ============================================================
-# CHAT HISTORY
-# ============================================================
+# Chat history
 for msg in st.session_state.messages:
     with st.chat_message(msg["role"]):
         st.markdown(msg["content"])
@@ -222,17 +414,17 @@ for msg in st.session_state.messages:
             with st.expander("Why this decision?"):
                 st.json(m["rationale"])
 
-# ============================================================
-# CHAT INPUT 
-# ============================================================
+# Chat input (unless post-test is open)
 if not st.session_state.posttest_open:
-    user_input = st.chat_input("Ask a question, e.g. 'Explain mitosis'")
+    user_input = st.chat_input("Ask a question, e.g. 'Explain red blood cells'")
 
     if user_input:
+        # Save user message
         st.session_state.messages.append({"role": "user", "content": user_input})
         with st.chat_message("user"):
             st.markdown(user_input)
 
+        # Build state + policy decision
         state = CognitiveState(
             attention=attention, fatigue=fatigue,
             confusion=confusion, readiness=readiness, workload=workload)
@@ -243,9 +435,16 @@ if not st.session_state.posttest_open:
                 decision = st.session_state.svc.decide(state, st.session_state.traits)
             st.session_state.last_decision = decision
 
+            # Build messages WITH HISTORY
+            # history = everything before the current user message
+            history = st.session_state.messages[:-1]
             messages = build_messages(
                 state, st.session_state.traits,
-                decision["strategy"], decision["prompt"], user_input)
+                decision["strategy"], decision["prompt"],
+                topic=user_input,
+                history=history,
+            )
+
             try:
                 with st.spinner("LLM is generating…"):
                     content, backend_used = chat(messages)
@@ -283,31 +482,26 @@ if not st.session_state.posttest_open:
     if st.session_state.interactions > 0:
         st.caption("💡 Tip: Keep asking questions. When you're done, click **✅ Take the post-test** in the sidebar.")
     else:
-        st.caption("💡 Tip: Try 'Explain DNA' or 'What is mitosis?'")
+        st.caption("💡 Tip: Try 'Explain red blood cells' or 'What is DNA?'")
 
-# ============================================================
-# POST-TEST (only when user opened it from the sidebar)
-# ============================================================
+# Post-test
 if st.session_state.posttest_open:
     st.divider()
-    st.subheader("📊 Post-Test & Learning Gain")
-    st.caption(
-        f"Pre-test baseline (from PRIOR_SCALAR): **{st.session_state.pre_score:.0f}%**"
-    )
+    topic_key = st.session_state.posttest_topic or "general"
+    topic_name = TOPIC_QUESTION_BANK[topic_key]["name"]
+    st.subheader(f"📊 Post-Test — {topic_name}")
+    st.caption(f"Pre-test baseline (from PRIOR_SCALAR): **{st.session_state.pre_score:.0f}%**")
+
+    questions = st.session_state.posttest_questions or TOPIC_QUESTION_BANK["general"]["questions"]
 
     with st.form("posttest"):
-        st.markdown("**Q1.** What is the main function of DNA?")
-        q1 = st.radio("Q1", ["Store genetic information", "Produce energy",
-                             "Build cell walls", "Transport oxygen"],
-                      label_visibility="collapsed")
-
-        st.markdown("**Q2.** During which phase does DNA replication occur?")
-        q2 = st.radio("Q2", ["Prophase", "S phase", "Anaphase", "Telophase"],
-                      label_visibility="collapsed")
-
-        st.markdown("**Q3.** Which base pairs with Adenine in DNA?")
-        q3 = st.radio("Q3", ["Guanine", "Cytosine", "Thymine", "Uracil"],
-                      label_visibility="collapsed")
+        answers = []
+        for i, item in enumerate(questions):
+            st.markdown(f"**Q{i+1}.** {item['q']}")
+            ans = st.radio(f"Q{i+1}", item["options"], key=f"pt_q{i}",
+                           label_visibility="collapsed")
+            answers.append(ans)
+            st.markdown("")
 
         c1, c2 = st.columns(2)
         with c1:
@@ -316,19 +510,16 @@ if st.session_state.posttest_open:
             skip = st.form_submit_button("⏭ Skip (no update)")
 
     if submitted:
-        correct = sum([
-            q1 == "Store genetic information",
-            q2 == "S phase",
-            q3 == "Thymine",
-        ])
-        post_score = correct / 3 * 100
+        correct = sum(1 for i, item in enumerate(questions)
+                      if answers[i] == item["correct"])
+        post_score = correct / len(questions) * 100
 
         sig = EvaluationSignal(
             pre_score=st.session_state.pre_score,
             post_score=post_score).compute()
 
         st.success(
-            f"Post-test: **{post_score:.0f}%** | "
+            f"Post-test: **{post_score:.0f}%** ({correct}/{len(questions)}) | "
             f"Learning gain: **{sig.learning_gain:.2f}** | "
             f"Normalized gain: **{sig.normalized_gain:.2f}**"
         )
@@ -341,16 +532,19 @@ if st.session_state.posttest_open:
                 d["strategy"], d["prompt"], sig.learning_gain)
             st.info("Policy updated — the system will adapt better next time.")
 
+        # Reset post-test state
         st.session_state.posttest_open = False
+        st.session_state.posttest_questions = None
+        st.session_state.posttest_topic = None
         st.balloons()
 
     if skip:
         st.session_state.posttest_open = False
+        st.session_state.posttest_questions = None
+        st.session_state.posttest_topic = None
         st.rerun()
 
-# ============================================================
-# DECISION TRACE
-# ============================================================
+# Trace
 with st.expander("🔍 Decision trace (last 10)"):
     if st.session_state.svc and st.session_state.svc.trace:
         st.json(st.session_state.svc.trace[-10:])

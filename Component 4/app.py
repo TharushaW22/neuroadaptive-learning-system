@@ -1,4 +1,5 @@
 
+import json as _json
 import streamlit as st
 
 from schemas import (CognitiveState, StudentTraits, LearningStyle, Interest,
@@ -14,25 +15,31 @@ try:
 except ImportError:
     PRIOR_SCALAR = {"Beginner": 0.0, "Intermediate": 0.5, "Advanced": 1.0}
 
-"""Beginner -> 30, Intermediate -> 55, Advanced -> 80."""
 def pre_score_from_prior(prior_value: str) -> float:
+    """Beginner -> 30, Intermediate -> 55, Advanced -> 80."""
     return 30.0 + PRIOR_SCALAR[prior_value] * 50.0
 
 
 # ============================================================
-# TOPIC QUESTION BANK (used to build the post-test)
+# TOPIC BANK (used for the post-test only)
 # ============================================================
 TOPIC_KEYWORDS = {
     "dna":            ["dna", "deoxyribonucleic", "nucleotide", "base pair", "double helix"],
     "rna":            ["rna", "ribonucleic", "mrna", "trna", "transcription", "translation"],
-    "mitosis":        ["mitosis", "cell division", "prophase", "metaphase", "anaphase", "telophase"],
+    "mitosis":        ["mitosis", "prophase", "metaphase", "anaphase", "telophase"],
     "meiosis":        ["meiosis", "gamete", "crossing over", "haploid"],
     "photosynthesis": ["photosynthesis", "chloroplast", "calvin", "light reaction"],
-    "respiration":    ["respiration", "glycolysis", "krebs", "atp", "mitochondria"],
+    "respiration":    ["respiration", "glycolysis", "krebs", "mitochondria", "atp"],
     "blood":          ["blood", "red blood", "rbc", "hemoglobin", "circulation",
-                       "white blood", "platelet"],
-    "protein":        ["protein", "amino acid", "ribosome", "polypeptide"],
+                       "white blood", "platelet", "plasma"],
+    "protein":        ["protein synthesis", "amino acid", "ribosome", "polypeptide"],
     "enzyme":         ["enzyme", "catalyst", "substrate", "active site"],
+    "cell":           ["organelle", "cell membrane", "cytoplasm", "nucleus", "vacuole", "lysosome"],
+    "genetics":       ["genetic", "allele", "phenotype", "genotype", "punnett", "inheritance"],
+    "evolution":      ["evolution", "darwin", "natural selection", "fossil", "mutation"],
+    "nervous":        ["nervous", "neuron", "synapse", "brain", "nerve"],
+    "immune":         ["immune", "antibody", "pathogen", "b cell", "t cell", "vaccine"],
+    "hormone":        ["hormone", "insulin", "pituitary", "thyroid", "adrenaline"],
 }
 
 TOPIC_QUESTION_BANK = {
@@ -61,7 +68,8 @@ TOPIC_QUESTION_BANK = {
              "options": ["Adenine", "Thymine", "Uracil", "Guanine"],
              "correct": "Uracil"},
             {"q": "What is the main role of mRNA?",
-             "options": ["Carry amino acids", "Carry genetic message from DNA to ribosome",
+             "options": ["Carry amino acids",
+                         "Carry genetic message from DNA to ribosome",
                          "Form the ribosome", "Store energy"],
              "correct": "Carry genetic message from DNA to ribosome"},
         ],
@@ -95,7 +103,8 @@ TOPIC_QUESTION_BANK = {
              "correct": "Produce gametes"},
             {"q": "What is 'crossing over'?",
              "options": ["Chromosomes condensing", "DNA replicating",
-                         "Homologous chromosomes exchanging segments", "Cells dividing"],
+                         "Homologous chromosomes exchanging segments",
+                         "Cells dividing"],
              "correct": "Homologous chromosomes exchanging segments"},
         ],
     },
@@ -174,6 +183,92 @@ TOPIC_QUESTION_BANK = {
              "correct": "They denature"},
         ],
     },
+    "cell": {
+        "name": "Cell structure",
+        "questions": [
+            {"q": "Which organelle is the site of ATP production?",
+             "options": ["Nucleus", "Mitochondria", "Ribosome", "Golgi apparatus"],
+             "correct": "Mitochondria"},
+            {"q": "What controls what enters and exits the cell?",
+             "options": ["Cytoplasm", "Cell membrane", "Nucleus", "Vacuole"],
+             "correct": "Cell membrane"},
+            {"q": "Which organelle contains digestive enzymes?",
+             "options": ["Lysosome", "Ribosome", "Nucleolus", "Centriole"],
+             "correct": "Lysosome"},
+        ],
+    },
+    "genetics": {
+        "name": "Genetics",
+        "questions": [
+            {"q": "What is the term for different forms of the same gene?",
+             "options": ["Chromosomes", "Alleles", "Codons", "Ribosomes"],
+             "correct": "Alleles"},
+            {"q": "What term describes the physical expression of a trait?",
+             "options": ["Genotype", "Phenotype", "Karyotype", "Allele"],
+             "correct": "Phenotype"},
+            {"q": "In a cross Aa x Aa, what fraction of offspring are typically recessive?",
+             "options": ["0", "1/2", "1/4", "All"],
+             "correct": "1/4"},
+        ],
+    },
+    "evolution": {
+        "name": "Evolution",
+        "questions": [
+            {"q": "What did Darwin call the process by which favourable traits spread?",
+             "options": ["Mutation", "Natural selection", "Genetic drift", "Migration"],
+             "correct": "Natural selection"},
+            {"q": "What is a change in DNA sequence called?",
+             "options": ["Replication", "Mutation", "Transcription", "Translation"],
+             "correct": "Mutation"},
+            {"q": "What are the preserved remains of ancient organisms called?",
+             "options": ["Artifacts", "Fossils", "Minerals", "Sediments"],
+             "correct": "Fossils"},
+        ],
+    },
+    "nervous": {
+        "name": "Nervous system",
+        "questions": [
+            {"q": "What is the basic functional unit of the nervous system?",
+             "options": ["Neuron", "Synapse", "Axon", "Ganglion"],
+             "correct": "Neuron"},
+            {"q": "What part of the neuron receives incoming signals?",
+             "options": ["Axon", "Dendrites", "Myelin sheath", "Terminal"],
+             "correct": "Dendrites"},
+            {"q": "What is the gap between two neurons called?",
+             "options": ["Node", "Synapse", "Gap junction", "Vesicle"],
+             "correct": "Synapse"},
+        ],
+    },
+    "immune": {
+        "name": "Immune system",
+        "questions": [
+            {"q": "Which cells produce antibodies?",
+             "options": ["B cells", "T cells", "Macrophages", "Platelets"],
+             "correct": "B cells"},
+            {"q": "What is the first line of defence against pathogens?",
+             "options": ["Antibodies", "Skin and mucous membranes",
+                         "T cells", "Bone marrow"],
+             "correct": "Skin and mucous membranes"},
+            {"q": "What is the process of white blood cells engulfing pathogens called?",
+             "options": ["Osmosis", "Phagocytosis", "Diffusion", "Apoptosis"],
+             "correct": "Phagocytosis"},
+        ],
+    },
+    "hormone": {
+        "name": "Hormones",
+        "questions": [
+            {"q": "Which gland is known as the master gland?",
+             "options": ["Thyroid", "Adrenal", "Pituitary", "Pancreas"],
+             "correct": "Pituitary"},
+            {"q": "Which hormone regulates blood glucose?",
+             "options": ["Insulin", "Adrenaline", "Thyroxine", "Cortisol"],
+             "correct": "Insulin"},
+            {"q": "Hormones are transported mainly via which system?",
+             "options": ["Nervous system", "Circulatory system",
+                         "Lymphatic system", "Digestive system"],
+             "correct": "Circulatory system"},
+        ],
+    },
     "general": {
         "name": "General biology",
         "questions": [
@@ -184,7 +279,8 @@ TOPIC_QUESTION_BANK = {
              "options": ["Nucleus", "Mitochondria", "Ribosome", "Golgi"],
              "correct": "Mitochondria"},
             {"q": "What is the process by which cells make proteins called?",
-             "options": ["Photosynthesis", "Respiration", "Protein synthesis", "Replication"],
+             "options": ["Photosynthesis", "Respiration",
+                         "Protein synthesis", "Replication"],
              "correct": "Protein synthesis"},
         ],
     },
@@ -204,6 +300,87 @@ def detect_topic(messages) -> str:
     }
     best = max(scores, key=scores.get)
     return best if scores[best] > 0 else "general"
+
+
+def session_topic_hint(messages) -> str:
+    """Return the first substantive user message as a topic anchor."""
+    for m in messages:
+        if m.get("role") == "user":
+            text = m.get("content", "").strip()
+            if len(text.split()) >= 3:
+                return text
+    return ""
+
+
+def generate_posttest_with_llm(messages) -> dict:
+    """
+    Ask the LLM to write 3 MCQs based on the student's session.
+    Returns the same schema as TOPIC_QUESTION_BANK entries.
+    Falls back to the 'general' bank if the LLM fails or returns bad JSON.
+    """
+    transcript = "\n".join(
+        f"{m['role']}: {m['content'][:300]}"
+        for m in messages[-6:]
+        if m.get("role") in ("user", "assistant") and m.get("content")
+    )
+
+    prompt = f"""You are an exam writer for a biology tutor.
+
+Below is a short transcript of a tutoring session between a student and an AI tutor.
+
+--- TRANSCRIPT START ---
+{transcript}
+--- TRANSCRIPT END ---
+
+Task:
+Generate exactly 3 multiple-choice questions (4 options each) that test the
+student's understanding of the SPECIFIC TOPIC discussed in the transcript.
+
+Requirements:
+- Detect the main topic from the transcript.
+- Every question must be about that topic.
+- Exactly 4 options per question.
+- Mark one option as the correct answer.
+- Do NOT ask about the tutor's teaching strategy or the student's state.
+- Keep each question short and clear.
+
+Return ONLY valid JSON in this exact shape, no commentary:
+{{
+  "name": "<short topic name>",
+  "questions": [
+    {{"q": "<q1>", "options": ["a","b","c","d"], "correct": "<exact correct option text>"}},
+    {{"q": "<q2>", "options": ["a","b","c","d"], "correct": "<exact correct option text>"}},
+    {{"q": "<q3>", "options": ["a","b","c","d"], "correct": "<exact correct option text>"}}
+  ]
+}}"""
+
+    try:
+        text, _ = chat([{"role": "user", "content": prompt}])
+    except LLMUnavailable:
+        return TOPIC_QUESTION_BANK["general"]
+
+    try:
+        start = text.index("{")
+        end = text.rindex("}") + 1
+        data = _json.loads(text[start:end])
+        if (
+            isinstance(data.get("name"), str)
+            and isinstance(data.get("questions"), list)
+            and len(data["questions"]) == 3
+            and all(
+                isinstance(q.get("q"), str)
+                and isinstance(q.get("options"), list)
+                and len(q["options"]) == 4
+                and isinstance(q.get("correct"), str)
+                and q["correct"] in q["options"]
+                for q in data["questions"]
+            )
+        ):
+            return data
+    except (ValueError, _json.JSONDecodeError, KeyError):
+        pass
+
+    return TOPIC_QUESTION_BANK["general"]
 
 
 # ============================================================
@@ -269,6 +446,7 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
+
 # ============================================================
 # SESSION STATE
 # ============================================================
@@ -286,6 +464,8 @@ if "posttest_questions" not in st.session_state:
     st.session_state.posttest_questions = None
 if "posttest_topic" not in st.session_state:
     st.session_state.posttest_topic = None
+if "posttest_topic_name" not in st.session_state:
+    st.session_state.posttest_topic_name = None
 if "last_decision" not in st.session_state:
     st.session_state.last_decision = None
 if "last_state" not in st.session_state:
@@ -297,6 +477,7 @@ if "winner_name" not in st.session_state:
 if "interactions" not in st.session_state:
     st.session_state.interactions = 0
 
+
 # ============================================================
 # SIDEBAR
 # ============================================================
@@ -306,7 +487,7 @@ with st.sidebar:
     st.caption(f"`{Config.summary()}`")
     st.divider()
 
-    # 1. Profile
+    # ---- Profile ----
     st.subheader("1️⃣ Learner Profile")
     with st.form("questionnaire"):
         style = st.selectbox("How do you learn best?", [e.value for e in LearningStyle])
@@ -337,7 +518,7 @@ with st.sidebar:
 
     st.divider()
 
-    # 2. Cognitive state
+    # ---- Cognitive state ----
     st.subheader("2️⃣ Cognitive State")
     st.caption("**SIMULATED** — from Components 1 & 2 (EEG + CV) in the full system.")
     attention = st.slider("🎯 Attention", 0.0, 1.0, 0.65, 0.05)
@@ -348,7 +529,7 @@ with st.sidebar:
 
     st.divider()
 
-    # 3. Session status
+    # ---- Session status + post-test trigger ----
     st.subheader("3️⃣ Session Status")
     st.metric("💬 Interactions", st.session_state.interactions)
 
@@ -360,8 +541,16 @@ with st.sidebar:
         st.markdown("**Finished studying?**")
         if st.button("✅ Take the post-test"):
             topic = detect_topic(st.session_state.messages)
-            st.session_state.posttest_topic = topic
-            st.session_state.posttest_questions = TOPIC_QUESTION_BANK[topic]["questions"]
+            if topic != "general":
+                st.session_state.posttest_topic = topic
+                st.session_state.posttest_questions = TOPIC_QUESTION_BANK[topic]["questions"]
+                st.session_state.posttest_topic_name = TOPIC_QUESTION_BANK[topic]["name"]
+            else:
+                with st.spinner("Preparing post-test for your session topic..."):
+                    generated = generate_posttest_with_llm(st.session_state.messages)
+                st.session_state.posttest_topic = "custom"
+                st.session_state.posttest_questions = generated["questions"]
+                st.session_state.posttest_topic_name = generated["name"]
             st.session_state.posttest_open = True
             st.rerun()
     elif st.session_state.posttest_open:
@@ -369,7 +558,7 @@ with st.sidebar:
 
     st.divider()
 
-    # 4. Algorithm comparison
+    # ---- Algorithm comparison ----
     st.subheader("4️⃣ Algorithm Comparison")
     if not st.session_state.comparison_done:
         if st.button("▶ Run 4-Algorithm Comparison"):
@@ -387,8 +576,11 @@ with st.sidebar:
         st.session_state.last_decision = None
         st.session_state.posttest_open = False
         st.session_state.posttest_questions = None
+        st.session_state.posttest_topic = None
+        st.session_state.posttest_topic_name = None
         st.session_state.interactions = 0
         st.rerun()
+
 
 # ============================================================
 # MAIN
@@ -419,12 +611,10 @@ if not st.session_state.posttest_open:
     user_input = st.chat_input("Ask a question, e.g. 'Explain red blood cells'")
 
     if user_input:
-        # Save user message
         st.session_state.messages.append({"role": "user", "content": user_input})
         with st.chat_message("user"):
             st.markdown(user_input)
 
-        # Build state + policy decision
         state = CognitiveState(
             attention=attention, fatigue=fatigue,
             confusion=confusion, readiness=readiness, workload=workload)
@@ -435,13 +625,22 @@ if not st.session_state.posttest_open:
                 decision = st.session_state.svc.decide(state, st.session_state.traits)
             st.session_state.last_decision = decision
 
-            # Build messages WITH HISTORY
-            # history = everything before the current user message
             history = st.session_state.messages[:-1]
+            topic_anchor = session_topic_hint(history)
+
+            # If the current message is a short follow-up, anchor it to the topic
+            current_user = user_input
+            if topic_anchor and len(user_input.split()) <= 6:
+                current_user = (
+                    f"{user_input}\n\n"
+                    f"(Note: this is a follow-up to our conversation that started with: "
+                    f"\"{topic_anchor}\". Stay on that topic.)"
+                )
+
             messages = build_messages(
                 state, st.session_state.traits,
                 decision["strategy"], decision["prompt"],
-                topic=user_input,
+                topic=current_user,
                 history=history,
             )
 
@@ -484,11 +683,12 @@ if not st.session_state.posttest_open:
     else:
         st.caption("💡 Tip: Try 'Explain red blood cells' or 'What is DNA?'")
 
-# Post-test
+# ============================================================
+# POST-TEST
+# ============================================================
 if st.session_state.posttest_open:
     st.divider()
-    topic_key = st.session_state.posttest_topic or "general"
-    topic_name = TOPIC_QUESTION_BANK[topic_key]["name"]
+    topic_name = st.session_state.posttest_topic_name or "General biology"
     st.subheader(f"📊 Post-Test — {topic_name}")
     st.caption(f"Pre-test baseline (from PRIOR_SCALAR): **{st.session_state.pre_score:.0f}%**")
 
@@ -532,19 +732,22 @@ if st.session_state.posttest_open:
                 d["strategy"], d["prompt"], sig.learning_gain)
             st.info("Policy updated — the system will adapt better next time.")
 
-        # Reset post-test state
         st.session_state.posttest_open = False
         st.session_state.posttest_questions = None
         st.session_state.posttest_topic = None
+        st.session_state.posttest_topic_name = None
         st.balloons()
 
     if skip:
         st.session_state.posttest_open = False
         st.session_state.posttest_questions = None
         st.session_state.posttest_topic = None
+        st.session_state.posttest_topic_name = None
         st.rerun()
 
-# Trace
+# ============================================================
+# DECISION TRACE
+# ============================================================
 with st.expander("🔍 Decision trace (last 10)"):
     if st.session_state.svc and st.session_state.svc.trace:
         st.json(st.session_state.svc.trace[-10:])

@@ -392,57 +392,219 @@ st.set_page_config(page_title=Config.APP_TITLE, page_icon="🧠",
 st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
-    * { font-family: 'Inter', sans-serif; }
+
+    html, body, [class*="css"] {
+        font-family: 'Inter', sans-serif;
+    }
+
+    /* ---- MAIN BACKGROUND ---- */
     .stApp {
-        background: linear-gradient(135deg, #080815 0%, #0f0f23 50%, #130f22 100%);
-        color: #e0e0ff;
+        background: #FFFFFF;
+        color: #1E293B;
     }
+
+    /* ---- SIDEBAR ---- */
     [data-testid="stSidebar"] {
-        background: linear-gradient(180deg, #0f0f23 0%, #080815 100%);
-        border-right: 1px solid rgba(124, 58, 237, 0.25);
+        background: #F8FAFC;
+        border-right: 1px solid #E2E8F0;
     }
-    h1, h2, h3 { color: #c4b5fd !important; }
+    [data-testid="stSidebar"] * {
+        color: #1E293B;
+    }
+
+    /* ---- HEADINGS ---- */
     h1 {
-        background: linear-gradient(90deg, #a78bfa, #60a5fa, #34d399);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
+        color: #1E293B !important;
         font-weight: 800 !important;
+        font-size: 2rem !important;
+        letter-spacing: -0.02em;
     }
-    [data-testid="stMetric"] {
-        background: rgba(124, 58, 237, 0.12);
-        border: 1px solid rgba(124, 58, 237, 0.25);
-        border-radius: 10px;
-        padding: 8px;
+    h2, h3 {
+        color: #1E293B !important;
+        font-weight: 700 !important;
     }
+
+    /* ---- BODY TEXT ---- */
+    p, span, label, div {
+        color: #1E293B;
+    }
+
+    /* ---- BUTTONS ---- */
     .stButton > button {
-        background: linear-gradient(135deg, #7c3aed 0%, #2563eb 100%);
-        color: white !important;
+        background: linear-gradient(135deg, #4F46E5 0%, #4338CA 100%);
+        color: #FFFFFF !important;
         border: none !important;
-        border-radius: 8px;
+        border-radius: 10px;
+        padding: 10px 20px;
+        font-weight: 600;
+        font-size: 15px;
+        transition: all 0.2s ease;
         width: 100%;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+    }
+    .stButton > button:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 6px 16px rgba(79, 70, 229, 0.35);
+    }
+    .stButton > button:focus {
+        outline: none;
+        box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.25);
+    }
+
+    /* ---- CHAT MESSAGES ---- */
+    [data-testid="stChatMessage"] {
+        background: #F8FAFC;
+        border: 1px solid #E2E8F0;
+        border-radius: 14px;
+        padding: 16px;
+        margin-bottom: 12px;
+    }
+    [data-testid="stChatMessage"]:has([data-testid="chatAvatarIcon-user"]) {
+        background: #EEF2FF;
+        border-color: #C7D2FE;
+    }
+    [data-testid="stChatMessage"] * {
+        color: #1E293B !important;
+    }
+
+    /* ---- CHAT INPUT ---- */
+    [data-testid="stChatInput"] {
+        background: #FFFFFF;
+        border: 1px solid #CBD5E1;
+        border-radius: 12px;
+    }
+    [data-testid="stChatInput"] textarea {
+        color: #1E293B !important;
+        background: #FFFFFF !important;
+    }
+
+    /* ---- METRICS ---- */
+    [data-testid="stMetric"] {
+        background: #F1F5F9;
+        border: 1px solid #E2E8F0;
+        border-radius: 12px;
+        padding: 14px;
+    }
+    [data-testid="stMetricLabel"] {
+        color: #64748B !important;
+        font-weight: 500;
+    }
+    [data-testid="stMetricValue"] {
+        color: #1E293B !important;
+        font-weight: 700;
+    }
+
+    /* ---- FORMS AND INPUTS ---- */
+    .stTextInput input,
+    .stNumberInput input,
+    .stSelectbox div[data-baseweb="select"] > div {
+        background: #FFFFFF !important;
+        color: #1E293B !important;
+        border: 1px solid #CBD5E1 !important;
+        border-radius: 8px;
+    }
+
+    /* ---- SLIDERS ---- */
+    .stSlider [data-baseweb="slider"] div[role="slider"] {
+        background: #4F46E5 !important;
+    }
+    .stSlider [data-testid="stTickBar"] {
+        color: #64748B;
+    }
+
+    /* ---- ALERTS (info, success, warning, error) ---- */
+    [data-testid="stAlert"] {
+        border-radius: 10px;
+        border: 1px solid #E2E8F0;
+    }
+    [data-testid="stAlert"] * {
+        color: #1E293B !important;
+    }
+
+    /* ---- EXPANDERS ---- */
+    [data-testid="stExpander"] {
+        border: 1px solid #E2E8F0;
+        border-radius: 10px;
+        background: #FFFFFF;
+    }
+    [data-testid="stExpander"] summary {
+        color: #1E293B !important;
         font-weight: 600;
     }
-    [data-testid="stChatMessage"] {
-        background: rgba(255, 255, 255, 0.03);
-        border: 1px solid rgba(255, 255, 255, 0.07);
-        border-radius: 14px;
-        margin-bottom: 10px;
+
+    /* ---- PROGRESS BAR ---- */
+    .stProgress > div > div > div > div {
+        background: linear-gradient(90deg, #4F46E5, #6366F1) !important;
+    }
+
+    /* ---- DIVIDER ---- */
+    hr {
+        border-color: #E2E8F0 !important;
+    }
+
+    /* ============================================================
+       CUSTOM CHIPS — light background, dark text for readability
+       ============================================================ */
+    .chip {
+        display: inline-block;
+        padding: 5px 12px;
+        border-radius: 16px;
+        font-size: 12px;
+        font-weight: 600;
+        margin: 2px 6px 2px 0;
+        border: 1px solid transparent;
     }
     .strategy-chip {
-        display: inline-block; background: rgba(96, 165, 250, 0.18);
-        color: #93c5fd; padding: 3px 10px; border-radius: 12px;
-        font-size: 12px; font-weight: 600; margin: 2px 4px 2px 0;
+        background: #DBEAFE;
+        color: #1E40AF;
+        border-color: #93C5FD;
     }
     .prompt-chip {
-        display: inline-block; background: rgba(52, 211, 153, 0.18);
-        color: #6ee7b7; padding: 3px 10px; border-radius: 12px;
-        font-size: 12px; font-weight: 600; margin: 2px 4px 2px 0;
+        background: #D1FAE5;
+        color: #065F46;
+        border-color: #6EE7B7;
     }
     .algo-chip {
-        display: inline-block; background: rgba(168, 85, 247, 0.18);
-        color: #d8b4fe; padding: 3px 10px; border-radius: 12px;
-        font-size: 12px; font-weight: 600; margin: 2px 4px 2px 0;
+        background: #EDE9FE;
+        color: #5B21B6;
+        border-color: #C4B5FD;
     }
+
+    /* ---- CARDS ---- */
+    .card {
+        background: #F8FAFC;
+        border: 1px solid #E2E8F0;
+        border-radius: 12px;
+        padding: 18px;
+        margin: 12px 0;
+        color: #1E293B;
+    }
+    .card-info {
+        background: #EFF6FF;
+        border-color: #BFDBFE;
+    }
+    .card-success {
+        background: #ECFDF5;
+        border-color: #A7F3D0;
+    }
+    .card-warning {
+        background: #FFFBEB;
+        border-color: #FDE68A;
+    }
+
+    /* ---- CODE ---- */
+    code {
+        background: #F1F5F9;
+        color: #1E293B;
+        padding: 2px 6px;
+        border-radius: 4px;
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 0.9em;
+    }
+
+    /* ---- HIDE STREAMLIT CHROME ---- */
+    #MainMenu { visibility: hidden; }
+    footer { visibility: hidden; }
 </style>
 """, unsafe_allow_html=True)
 

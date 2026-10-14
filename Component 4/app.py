@@ -766,7 +766,7 @@ for msg in st.session_state.messages:
                 f"<span class='prompt-chip'>📝 {m['prompt']}</span>",
                 unsafe_allow_html=True)
             with st.expander("Why this decision?"):
-                st.json(m["rationale"])
+                st.markdown(m["rationale"])
 
 # Chat input (unless post-test is open)
 if not st.session_state.posttest_open:
@@ -827,7 +827,7 @@ if not st.session_state.posttest_open:
                     unsafe_allow_html=True)
                 st.markdown(content)
                 with st.expander("Why this decision?"):
-                    st.json(decision["rationale"])
+                    st.markdown(decision["rationale"])
                 st.session_state.messages.append({
                     "role": "assistant",
                     "content": content,

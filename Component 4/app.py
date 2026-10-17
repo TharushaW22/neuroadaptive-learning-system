@@ -898,7 +898,14 @@ if st.session_state.posttest_open:
         st.session_state.posttest_questions = None
         st.session_state.posttest_topic = None
         st.session_state.posttest_topic_name = None
-        st.balloons()
+        
+        if post_score >= 66:
+            st.balloons()
+            st.success("🎉 Great job on the post-test!")
+        elif post_score > 0:
+            st.info("👍 Good effort. The tutor will adapt to help you better next time.")
+        else:
+            st.warning("📚 It looks like the topic was tough. The system has logged this to improve future sessions.")
 
     if skip:
         st.session_state.posttest_open = False

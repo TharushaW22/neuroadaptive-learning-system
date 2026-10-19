@@ -62,3 +62,27 @@ but are kept. Experiments train on all epochs by default (the model sees realist
 MNE's default transition bands are 0.5 Hz at the 0.5 Hz edge and 11.25 Hz at the 45 Hz edge
 (–6 dB at ~50.6 Hz). Combined with the 50 Hz notch, power at 57–64 Hz drops by roughly 50–60 dB
 (results/preprocessing/psd_before_after_*.png).
+
+## D12 — Classical hyper-parameters fixed (no nested tuning)
+Nested LOSO tuning (48 outer x k inner folds x grid) is not affordable on a CPU. Each model uses
+one fixed, conventional configuration (models/classical.py). RF and XGBoost were shrunk
+(200 trees; RF bootstrap 50 %; XGB 64 bins, 30 % columns) after checking on 6 held-out subjects
+that T1 AUROC is unchanged (RF 0.932 vs 0.935, XGB 0.951 vs 0.949) while training is 3-4x
+faster. Because nothing is tuned on the test subjects, the reported scores are not optimistic
+from model selection — but they may be slightly below what a tuned model could reach.
+
+## D13 — SVM scores are not probabilities
+The RBF-SVM is trained without Platt scaling (which would cost 5 extra fits per fold). Its
+decision values are squashed with a sigmoid/softmax so AUROC and averaging work, but they are
+not calibrated probabilities. Calibration is studied on the deep models (temperature scaling).
+
+## D14 — Classical grid reduced to fit the machine
+The development laptop (4 cores, 16 GB, shared with VS Code, Chrome, WSL and SQL Server — commit
+charge ~31 of 35 GB) paged heavily when 8 LOSO workers ran; RF folds took ~650 s instead of ~17 s.
+The grid was therefore run with 4 workers and split:
+* all 4 models x T1, T2, T3 without rest baseline (configs/experiments/classical.yaml);
+* all 4 models x T1 WITH rest baseline (classical_rest.yaml) — T1 is where the rest baseline can
+  inflate results, so this is where every model is compared;
+* for T2 and T3 the rest-baseline comparison uses the best model only (inside the feature ablation,
+  which runs both normalisations for every task).
+No hyper-parameter changed, so all runs remain comparable.

@@ -1,0 +1,50 @@
+# Phase 5 deep models. Same fixed 5 subject folds (results/folds_5fold.json) for every model.
+features_config: features.yaml
+seed: 42
+tasks: [workload_binary, workload_within_task]
+folds_file: results/folds_5fold.json
+
+# A6-A10 = architecture ablation of the hybrid; eegnet = published baseline.
+models:
+  eegnet:          {type: eegnet}
+  A6_cnn:          {type: hybrid, branches: [cnn], ablation_id: A6}
+  A7_cnn_lstm:     {type: hybrid, branches: [cnn, lstm], ablation_id: A7}
+  A8_cnn_lstm_trans: {type: hybrid, branches: [cnn, lstm, transformer], ablation_id: A8}
+  A9_cnn_lstm_gnn: {type: hybrid, branches: [cnn, lstm, gnn], ablation_id: A9}
+  A10_hybrid:      {type: hybrid, branches: [cnn, lstm, transformer, gnn], ablation_id: A10}
+
+input:
+  edge_source: plv          # plv | coh — edge weights of the GAT graph
+  edge_band: mean           # mean of theta/alpha/beta/gamma, or a band index 0-3
+
+model:
+  emb_dim: 64
+  cnn: {F1: 8, D: 2, F2: 16, kernel: 32, dropout: 0.25}
+  lstm_hidden: 64
+  trans_heads: 4
+  trans_layers: 2
+  trans_ff: 128
+  gnn: {hidden: 16, out_dim: 32, heads: 4, dropout: 0.1}
+  fusion_dim: 64
+  dropout: 0.3
+
+train:
+  seq_len: 8                       # 8 epochs = 18 s
+  test_stride: 2                   # evaluation sequences (shared with the classical 5-fold runs)
+  val_stride: 4
+  epoch_items_per_recording: 8     # fresh random sequence starts per recording per epoch
+  epoch_model_multiplier: 4        # EEGNet sees 4x as many (single-epoch) items per epoch
+  batch_size: 16
+  max_epochs: 25
+  patience: 5
+  lr: 0.001
+  weight_decay: 0.01
+  grad_clip: 1.0
+  val_frac: 0.15                   # inner validation subjects (early stopping + temperature)
+  clip: 20.0
+  threads: 8
+
+augment:
+  noise_std: 0.1                   # in units of the channel scale
+  channel_dropout: 0.1
+  max_shift: 16                    # samples (125 ms)

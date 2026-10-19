@@ -138,7 +138,10 @@ def main() -> None:
     counts_recs = label_counts(rec_meta, unit="recordings")
     with open(out_dir / "label_counts.json", "w", encoding="utf-8") as fh:
         json.dump({"epochs": counts_epochs, "recordings": counts_recs}, fh, indent=2)
-    write_labels_doc(counts_recs, counts_epochs, PROJECT_ROOT / "docs" / "labels.md")
+    # docs/labels.md documents the DEFAULT (4-s) epochs; other configs (e.g. 2-s) write their own copy
+    # next to their results, so a variant run can no longer overwrite the main document.
+    is_default = config_path(args.config).name == "preprocess.yaml"
+    write_labels_doc(counts_recs, counts_epochs, PROJECT_ROOT / "docs" / "labels.md" if is_default else out_dir / "labels.md")
 
     summary = {
         "config_hash": h,

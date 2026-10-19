@@ -1,0 +1,9 @@
+{
+  "source": "frontend/public/demo/stream_sub*.json (scripts/export_demo.py)",
+  "model": "T1_xgb_all",
+  "n_windows": 592,
+  "median_ms": 98.37525000330061,
+  "p95_ms": 121.38469999190414,
+  "max_ms": 755.1480999973137,
+  "note": "measured on the shared development laptop while other applications were running"
+}

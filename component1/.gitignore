@@ -23,3 +23,8 @@ frontend/dist/
 Thumbs.db
 .vscode/
 .idea/
+
+# Scratch results (smoke runs, audit permutations, raw logs)
+results/_smoke/
+results/_audit/
+results/logs/

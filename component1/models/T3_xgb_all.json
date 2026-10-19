@@ -1,0 +1,35 @@
+{
+  "version": "xgb-all-T3-20261019",
+  "task": "workload_within_task",
+  "classes": [
+    "moderate",
+    "high"
+  ],
+  "model": "xgb",
+  "feature_set": "all",
+  "normalisation": "none",
+  "n_train_epochs": 3330,
+  "n_train_subjects": 45,
+  "cv_summary": {
+    "experiment_id": "cls_T3_xgb_all_none_loso",
+    "per_fold_macro_f1": null,
+    "pooled": {
+      "n": 3330,
+      "macro_f1": 0.5384557730985435,
+      "balanced_accuracy": 0.5385135135135135,
+      "accuracy": 0.5468468468468468,
+      "precision_macro": 0.5390190077516281,
+      "recall_macro": 0.5385135135135135,
+      "auroc": 0.5441260043827612
+    },
+    "recording_level": {
+      "n": 45,
+      "macro_f1": 0.5445344129554656,
+      "balanced_accuracy": 0.545,
+      "accuracy": 0.5555555555555556,
+      "precision_macro": 0.5462962962962963,
+      "recall_macro": 0.545,
+      "auroc": 0.558
+    }
+  }
+}

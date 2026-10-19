@@ -86,3 +86,18 @@ The grid was therefore run with 4 workers and split:
 * for T2 and T3 the rest-baseline comparison uses the best model only (inside the feature ablation,
   which runs both normalisations for every task).
 No hyper-parameter changed, so all runs remain comparable.
+
+## D15 — Feature ablation scope
+A1–A5 + all are run with the best classical model for T1 and T3 (the two primary tasks), each
+with and without the rest baseline. T2 gets only the full feature set with the rest baseline
+(it is nearly the rest/task split, D: docs/labels.md), which keeps the run time within budget.
+
+## D16 — Below-chance T3 scores under LOSO are an artifact, not a signal
+Some T3 runs score clearly below chance (e.g. XGB all features + rest baseline: pooled AUROC 0.36).
+In T3 every subject contributes exactly one class (20 moderate, 25 high). Leaving one subject out
+shifts the training class balance *against* that subject's class (e.g. 20/24 when a "high" subject
+is held out), and a model that has learned little beyond the prior then leans towards the other
+class — so held-out predictions anti-correlate with the truth. This "LOSO anti-learning" effect is
+well known for small datasets with one label per subject. It means: T3 contains little or no
+learnable signal with these features; it must not be read as "the model learned the opposite".
+The leakage audit's label-permutation test shows what pure chance looks like for comparison.

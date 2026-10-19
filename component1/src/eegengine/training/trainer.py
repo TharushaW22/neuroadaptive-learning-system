@@ -210,14 +210,22 @@ def train_model(spec: dict, model_cfg: dict, train_cfg: dict, aug_cfg: dict, inp
             break
     model.load_state_dict(best["state"])
     val_logits = predict_logits(model, spec, inputs, val_items)
-    T = fit_temperature(val_logits, val_y)
+    # Temperature scaling needs both classes in the validation set; otherwise it degenerates
+    # (it can push T -> 0 and make the model over-confident), so keep T = 1.
+    T = fit_temperature(val_logits, val_y) if len(np.unique(val_y)) > 1 else 1.0
     return model, T, history, best["epoch"], val_items, val_logits, val_y
 
 
 def run_fold(spec, model_cfg, train_cfg, aug_cfg, inputs, meta, y_epoch, groups_epoch, train_rows, test_rows,
              test_items, n_classes, seed, log=print) -> dict:
     """Train on train_rows (split into fit/val by subject) and predict the given test sequences."""
-    fit_local, val_local = inner_validation_split(groups_epoch[train_rows], train_cfg.get("val_frac", 0.15), seed)
+    # subject-wise validation split; re-draw (deterministically) until it contains every class, so
+    # early stopping and temperature scaling see both classes (matters for T3: one class per subject)
+    n_cls = len(np.unique(y_epoch[train_rows]))
+    for k in range(50):
+        fit_local, val_local = inner_validation_split(groups_epoch[train_rows], train_cfg.get("val_frac", 0.15), seed + 1000 * k)
+        if len(np.unique(y_epoch[train_rows][val_local])) == n_cls:
+            break
     fit_rows, val_rows = train_rows[fit_local], train_rows[val_local]
     assert_no_subject_overlap(groups_epoch[fit_rows], groups_epoch[test_rows])
     assert_no_subject_overlap(groups_epoch[val_rows], groups_epoch[test_rows])

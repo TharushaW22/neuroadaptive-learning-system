@@ -30,3 +30,8 @@ Running log so work can resume after context compaction. Newest entries at the b
 - Remaining order: classical (running) -> run_ablation.py -> classical_kfold5 -> deep smoke -> deep full
   (background, ~hours) -> train_final_classical + run_deep --final -> export_contract / export_demo /
   export_report -> frontend build + smoke -> Phase 8 docs.
+- Classical baselines DONE (16 runs + T1 rest baseline). Best = xgb (rank 1 on T1 and T3).
+  T1 none: LR .845 SVM .859 RF .851 XGB .865 pooled macro-F1; rest baseline: LR .891 SVM .951 RF .926 XGB .924.
+  T3: LR .501 SVM .481 RF .527 XGB .538 (≈ chance). T2: .537-.565 (AUROC .73-.77).
+- Ablation running (logs/ablation.log), then queued: classical_kfold5 -> deep smoke (logs/deep_smoke.log).
+- Next after smoke: review, then `run_deep.py` full in background (threads 4).

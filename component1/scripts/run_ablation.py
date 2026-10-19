@@ -4,7 +4,7 @@ The best model is chosen from the baseline runs WITHOUT rest baseline: best mean
 macro-F1 over T1 and T3 (the two primary tasks). Ablations run for every task and both
 normalisation settings.
 
-Usage:  python scripts/run_ablation.py [--model xgb] [--skip-existing]
+Usage:  python scripts/run_ablation.py [--model xgb] [--skip-existing] [--tasks ...] [--norms ...] [--stats-only]
 Writes: results/cls_<T>_<model>_<A..>_<norm>_loso/ and results/stats_classical.json
 """
 
@@ -46,6 +46,10 @@ def main() -> None:
     ap.add_argument("--config", default="experiments/classical.yaml")
     ap.add_argument("--model")
     ap.add_argument("--skip-existing", action="store_true")
+    ap.add_argument("--tasks", nargs="*", help="default: all tasks in the config")
+    ap.add_argument("--norms", nargs="*", help="default: none rest_baseline")
+    ap.add_argument("--feature-sets", nargs="*", help="default: A1-A5 + all")
+    ap.add_argument("--stats-only", action="store_true", help="only recompute the Wilcoxon tests")
     args = ap.parse_args()
     cfg = load_config(args.config)
 
@@ -57,9 +61,12 @@ def main() -> None:
     with open(RESULTS_DIR / "features" / "feature_summary.json", encoding="utf-8") as f:
         feat_lat = json.load(f)["single_epoch_latency_ms_median"]
 
-    for task in cfg["tasks"]:
-        for norm in cfg["normalisations"]:
-            for fset in FEATURE_SETS:
+    tasks = args.tasks or cfg["tasks"]
+    norms = args.norms or ["none", "rest_baseline"]
+    fsets = args.feature_sets or list(FEATURE_SETS)
+    for task in ([] if args.stats_only else tasks):
+        for norm in norms:
+            for fset in fsets:
                 eid = experiment_id(task, best, fset, norm, "loso")
                 out = RESULTS_DIR / eid
                 if (out / "metrics.json").exists() and (args.skip_existing or fset == "all"):
@@ -79,8 +86,8 @@ def main() -> None:
             tests.append({"group": group, **paired_wilcoxon(res[a], res[b])})
 
     for task in cfg["tasks"]:
-        for norm in cfg["normalisations"]:
-            ref = experiment_id(task, best, "A1_spectral", norm, "loso")
+        for norm in ("none", "rest_baseline"):
+            ref =experiment_id(task, best, "A1_spectral", norm, "loso")
             for fset in FEATURE_SETS:
                 if fset != "A1_spectral":
                     add(f"ablation_vs_A1/{TASKS[task]['short']}/{norm}", experiment_id(task, best, fset, norm, "loso"), ref)

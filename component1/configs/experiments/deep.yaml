@@ -42,7 +42,7 @@ train:
   grad_clip: 1.0
   val_frac: 0.15                   # inner validation subjects (early stopping + temperature)
   clip: 20.0
-  threads: 8
+  threads: 4                       # physical cores of the dev laptop
 
 augment:
   noise_std: 0.1                   # in units of the channel scale

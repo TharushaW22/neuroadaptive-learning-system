@@ -98,7 +98,11 @@ def train_final(name, spec, cfg, task, inputs, meta, logs) -> None:
     y_epoch = meta[TASKS[task]["column"]].to_numpy()
     groups = meta["subject_id"].to_numpy()
     rows = np.where(mask)[0]
-    fit_l, val_l = inner_validation_split(groups[rows], cfg["train"].get("val_frac", 0.15), cfg.get("seed", 42))
+    n_cls = len(np.unique(y_epoch[rows]))
+    for k in range(50):                       # validation subjects must cover every class (see trainer.run_fold)
+        fit_l, val_l = inner_validation_split(groups[rows], cfg["train"].get("val_frac", 0.15), cfg.get("seed", 42) + 1000 * k)
+        if len(np.unique(y_epoch[rows][val_l])) == n_cls:
+            break
     log_path = logs / f"final_{TASKS[task]['short']}_{name}.log"
     with open(log_path, "w", encoding="utf-8") as lf:
         def log(msg):

@@ -1,0 +1,7 @@
+data/
+.venv/
+artifacts/
+results/_scratch/
+__pycache__/
+*.pyc
+.DS_Store

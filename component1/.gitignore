@@ -1,0 +1,25 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.venv/
+venv/
+
+# Data: raw STEW is ~400 MB and redistributed by its authors, processed data is generated
+data/raw/
+data/processed/
+
+# Model checkpoints (large; regenerate with scripts/run_deep.py)
+models/*.pt
+models/*.pth
+
+# Frontend
+frontend/node_modules/
+frontend/dist/
+
+# OS / editors
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

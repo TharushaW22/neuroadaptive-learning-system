@@ -1,0 +1,32 @@
+# EEG Neuro-Cognitive Understanding Engine (J26-DS-333, Component 1)
+# Tested with Python 3.13 on Windows 11 (proposal targets 3.11+; both work).
+
+# Core scientific stack
+numpy>=1.26
+scipy>=1.11
+pandas>=2.1
+pyarrow>=14          # parquet metadata files
+matplotlib>=3.8
+PyYAML>=6.0
+
+# EEG / signal processing
+mne>=1.6
+PyWavelets>=1.5
+networkx>=3.2
+
+# Classical ML
+scikit-learn>=1.4
+xgboost>=2.0
+
+# Deep learning (CPU wheel from PyPI is fine; GAT is implemented in plain PyTorch)
+torch>=2.2
+
+# API
+fastapi>=0.110
+uvicorn[standard]>=0.27
+pydantic>=2.5
+python-multipart>=0.0.9
+httpx>=0.27          # FastAPI TestClient
+
+# Testing
+pytest>=8.0

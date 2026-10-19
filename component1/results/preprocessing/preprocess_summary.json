@@ -22,5 +22,5 @@
     "sub37_lo"
   ],
   "note_low_usable": "These subjects are KEPT. Bad windows are only excluded when an experiment sets exclude_bad_windows=true.",
-  "elapsed_s": 79.7
+  "elapsed_s": 122.2
 }

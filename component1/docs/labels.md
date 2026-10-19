@@ -17,9 +17,9 @@ Masked labels are stored as `-1`; subjects are never dropped — each task uses 
 | T1 workload_binary | recordings | low 48, high 48 | lo: 48/0; hi: 0/48 |
 | T2 workload_level | recordings | low 42, medium 23, high 25 | lo: 42/3/0; hi: 0/20/25 |
 | T3 workload_within_task | recordings | moderate 20, high 25 | lo: 0/0; hi: 20/25 |
-| T1 workload_binary | epochs | low 7152, high 7152 | lo: 7152/0; hi: 0/7152 |
-| T2 workload_level | epochs | low 6258, medium 3427, high 3725 | lo: 6258/447/0; hi: 0/2980/3725 |
-| T3 workload_within_task | epochs | moderate 2980, high 3725 | lo: 0/0; hi: 2980/3725 |
+| T1 workload_binary | epochs | low 3552, high 3552 | lo: 3552/0; hi: 0/3552 |
+| T2 workload_level | epochs | low 3108, medium 1702, high 1850 | lo: 3108/222/0; hi: 0/1480/1850 |
+| T3 workload_within_task | epochs | moderate 1480, high 1850 | lo: 0/0; hi: 1480/1850 |
 
 ## Why T2 is confounded and T3 matters
 

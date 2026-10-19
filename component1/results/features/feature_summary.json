@@ -11,15 +11,15 @@
     "coh": 364,
     "graph": 236
   },
-  "extraction_s_total": 41.7,
+  "extraction_s_total": 51.7,
   "cpu_seconds_by_family": {
-    "spectral": 3.8,
-    "entropy": 5.9,
-    "wavelet": 1.5,
-    "connectivity": 79.7,
-    "graph": 108.8
+    "spectral": 4.8,
+    "entropy": 7.4,
+    "wavelet": 1.9,
+    "connectivity": 85.4,
+    "graph": 143.3
   },
-  "single_epoch_latency_ms_median": 27.71,
+  "single_epoch_latency_ms_median": 24.47,
   "arrays": {
     "bandpower": [
       7104,

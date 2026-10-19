@@ -1,6 +1,6 @@
 {
   "feature_hash": "4041d9e6",
-  "features_file": "data\\processed\\features_4041d9e6.parquet",
+  "features_file": "data/processed/features_4041d9e6.parquet",
   "n_epochs": 7104,
   "n_features": 1499,
   "per_family": {
@@ -11,15 +11,15 @@
     "coh": 364,
     "graph": 236
   },
-  "extraction_s_total": 55.2,
+  "extraction_s_total": 41.7,
   "cpu_seconds_by_family": {
-    "spectral": 4.5,
-    "entropy": 7.1,
-    "wavelet": 2.2,
-    "connectivity": 81.3,
-    "graph": 168.9
+    "spectral": 3.8,
+    "entropy": 5.9,
+    "wavelet": 1.5,
+    "connectivity": 79.7,
+    "graph": 108.8
   },
-  "single_epoch_latency_ms_median": 40.53,
+  "single_epoch_latency_ms_median": 27.71,
   "arrays": {
     "bandpower": [
       7104,

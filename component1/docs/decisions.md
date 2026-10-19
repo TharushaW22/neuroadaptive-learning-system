@@ -101,3 +101,19 @@ class — so held-out predictions anti-correlate with the truth. This "LOSO anti
 well known for small datasets with one label per subject. It means: T3 contains little or no
 learnable signal with these features; it must not be read as "the model learned the opposite".
 The leakage audit's label-permutation test shows what pure chance looks like for comparison.
+
+## D17 — Deep models: small, early-stopped, 5-fold, random-start sequences
+On the 4-core laptop each deep model–task pair had to fit in ~15 min. Choices: EEGNet-style encoder
+with a 32-sample (0.25 s) temporal kernel (a 64-sample kernel hit a very slow CPU convolution
+path), 8 random sequence starts per training recording per epoch (fresh each epoch), batch 16,
+AdamW 1e-3, at most 25 epochs with patience 5 on validation loss, 4 threads. Every model uses the
+same folds, seeds and windows. These are reasonable but untuned settings — the deep models may be
+under-optimised relative to XGBoost, which is stated as a limitation.
+
+## D18 — Deployed models
+API/engine models (models/): T1_xgb_all and T3_xgb_all (best classical, trained on all subjects,
+no rest baseline), T1_A10_hybrid and T3_A10_hybrid (full hybrid), T1_A8_cnn_lstm_trans (best deep
+on T1). The T3 hybrid's final training stopped at epoch 0 and temperature scaling reached its
+upper bound (T = 20), which flattens its probabilities towards 0.5 — consistent with T3 having no
+learnable signal. The dashboard's default is the first listed model; XGBoost T1 is the most
+accurate choice for demonstrations.

@@ -1,0 +1,37 @@
+{
+  "version": "A10_hybrid-T3-20261019",
+  "task": "workload_within_task",
+  "classes": [
+    "moderate",
+    "high"
+  ],
+  "spec": {
+    "type": "hybrid",
+    "branches": [
+      "cnn",
+      "lstm",
+      "transformer",
+      "gnn"
+    ],
+    "ablation_id": "A10"
+  },
+  "temperature": 20.0,
+  "cv_summary": {
+    "experiment_id": "deep_T3_A10_hybrid_kfold5",
+    "per_fold_macro_f1": {
+      "mean": 0.38867224670491357,
+      "std": 0.06191437870260935,
+      "n_folds": 5
+    },
+    "pooled": {
+      "n": 1530,
+      "macro_f1": 0.4836521899606299,
+      "balanced_accuracy": 0.48926470588235293,
+      "accuracy": 0.48366013071895425,
+      "precision_macro": 0.4892829508242024,
+      "recall_macro": 0.48926470588235293,
+      "auroc": 0.5007162629757785
+    },
+    "ece_after": 0.13349627439492667
+  }
+}

@@ -105,9 +105,13 @@ def main() -> None:
     high = []
     for p in sorted(RESULTS_DIR.glob("*/metrics.json")):
         r = json.load(open(p, encoding="utf-8"))
-        ba = (r.get("pooled") or {}).get("balanced_accuracy")
-        if ba and ba > 0.97 and not p.parent.name.startswith("_"):
-            high.append({"experiment": r["experiment_id"], "balanced_accuracy": ba})
+        views = {"pooled": r.get("pooled"), "recording_level": r.get("recording_level"),
+                 "sequence_level": (r.get("sequence_level") or {}).get("pooled")}
+        for view, m in views.items():
+            ba = (m or {}).get("balanced_accuracy")
+            if ba and ba > 0.97 and not p.parent.name.startswith("_"):
+                high.append({"experiment": r["experiment_id"], "view": view, "balanced_accuracy": ba,
+                             "normalisation": r.get("normalisation")})
     out["results_above_97pct"] = high
     with open(RESULTS_DIR / "leakage_audit.json", "w", encoding="utf-8") as f:
         json.dump(out, f, indent=2)

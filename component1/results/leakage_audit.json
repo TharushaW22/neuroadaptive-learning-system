@@ -1,0 +1,59 @@
+{
+  "fold_integrity": {
+    "experiments_checked": 58,
+    "problems": [],
+    "ok": true
+  },
+  "feature_locality": {
+    "epochs_checked": [
+      0,
+      1000,
+      3000,
+      5000,
+      7000
+    ],
+    "max_abs_difference": 0.0,
+    "ok": true
+  },
+  "permutation_test": {
+    "n_permutations": 3,
+    "runs": [
+      {
+        "pooled_balanced_accuracy": 0.49845157657657657,
+        "pooled_auroc": 0.5000420870617239,
+        "fold_macro_f1_mean": 0.49083663500772595
+      },
+      {
+        "pooled_balanced_accuracy": 0.507882882882883,
+        "pooled_auroc": 0.5058292561987663,
+        "fold_macro_f1_mean": 0.494474013470447
+      },
+      {
+        "pooled_balanced_accuracy": 0.5118243243243243,
+        "pooled_auroc": 0.5070799790499959,
+        "fold_macro_f1_mean": 0.5023703970466998
+      }
+    ],
+    "mean_balanced_accuracy": 0.506052927927928,
+    "expected": "\u2248 0.5 if there is no leakage"
+  },
+  "subject_identity_probe": {
+    "random_split_subject_id_accuracy": 0.995495237434459,
+    "chance": 0.020833333333333332,
+    "meaning": "epochs carry a strong subject fingerprint, so random epoch splits would leak identity; all reported results use subject-wise splits instead"
+  },
+  "results_above_97pct": [
+    {
+      "experiment": "cls_T1_rf_all_rest_baseline_loso",
+      "view": "recording_level",
+      "balanced_accuracy": 0.9791666666666667,
+      "normalisation": "rest_baseline"
+    },
+    {
+      "experiment": "cls_T1_svm_all_rest_baseline_loso",
+      "view": "recording_level",
+      "balanced_accuracy": 0.9895833333333333,
+      "normalisation": "rest_baseline"
+    }
+  ]
+}

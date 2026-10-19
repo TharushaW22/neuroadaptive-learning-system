@@ -40,12 +40,18 @@ calibrated cognitive-state probabilities → timestamped JSON for other componen
 - Tests: `.venv\Scripts\python -m pytest`
 - EDA: `.venv\Scripts\python scripts\explore_dataset.py` → `results/eda/`
 - Quality report: `.venv\Scripts\python scripts\run_quality.py` → `results/quality/`
+- Whole pipeline: `.venv\Scripts\python scripts\run_all.py [--quick] [--from <step>]` (README lists every step)
+- API: `.venv\Scripts\python -m uvicorn api.main:app --port 8000` · dashboard: `cd frontend; npm run dev` (port 5173)
 - The first STEW load parses 96 text files (~30 s) and caches to `data/processed/stew_raw_cache.npz`.
+- Machine limits: 4 cores / 16 GB shared with other apps → classical LOSO with 4 workers; never run deep
+  training and the classical suites at the same time (D14).
 
 ## Layout
-- `src/eegengine/io/stew.py` loader + labels · `quality/` checks + report · `preprocess/` (dc.py now; filtering/ICA/epoching in Phase 2)
-- `features/`, `models/`, `training/`, `evaluation/`, `inference/` — later phases
-- `configs/` YAML · `scripts/` entry points · `tests/` pytest · `results/` outputs · `api/`, `frontend/` later
+- `src/eegengine/`: `io/stew.py` loader · `labels.py` T1/T2/T3 · `quality/` · `preprocess/` (filters, bad channels,
+  ICA, epoching, normalise, pipeline) · `features/` · `models/classical.py`, `models/deep/` · `training/` (cv, trainer,
+  calibration, runners) · `evaluation/` · `inference/` (engine, schema, heuristics, predictors) · `data.py` (hash-located files)
+- `configs/` YAML · `scripts/` one per step + `run_all.py` · `tests/` (103) · `results/` · `api/main.py` · `frontend/` (React)
+- `docs/`: decisions.md (D1–D18), labels.md, output_contract.md (+schema, example), leakage_audit.md, viva_notes.md
 
 ## Conventions
 - Small, readable, commented code — the author must explain everything in a viva.
@@ -54,4 +60,4 @@ calibrated cognitive-state probabilities → timestamped JSON for other componen
 - One git commit per finished step. Work phase by phase; stop after each phase with a summary.
 
 ## Status
-- Phase 1 (setup, loader, quality, EDA, tests): done.
+- Phases 1–8 done (see PROGRESS.md). Results: README "Results" + results/summary_*.md.

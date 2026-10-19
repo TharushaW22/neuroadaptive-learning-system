@@ -19,5 +19,5 @@
   "usable_fraction_overall": 0.934,
   "recordings_below_50pct_usable": [],
   "note_low_usable": "These subjects are KEPT. Bad windows are only excluded when an experiment sets exclude_bad_windows=true.",
-  "elapsed_s": 155.5
+  "elapsed_s": 106.4
 }

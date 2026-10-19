@@ -22,7 +22,9 @@ export function StreamControls() {
   const [speed, setSpeed] = useState(1);
 
   useEffect(() => {
-    if (!model && models.data?.length) setModel(models.data[0].id);
+    // default: the classical T1 model (most accurate in cross-subject evaluation), else the first one
+    if (!model && models.data?.length)
+      setModel((models.data.find((m) => m.kind === "classical" && m.task === "workload_binary") ?? models.data[0]).id);
   }, [models.data, model]);
 
   const available = useMemo(() => {

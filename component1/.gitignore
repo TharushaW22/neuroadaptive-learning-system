@@ -10,9 +10,7 @@ venv/
 data/raw/
 data/processed/
 
-# Model checkpoints (large; regenerate with scripts/run_deep.py)
-models/*.pt
-models/*.pth
+# Model checkpoints are small (< 1 MB) and committed so the API works after a clone
 
 # Frontend
 frontend/node_modules/

@@ -10,10 +10,13 @@ import argparse
 import json
 import sys
 
+from pathlib import Path
+
 import numpy as np
 
-from api import main as api
-from eegengine.config import PROJECT_ROOT
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))   # project root, so `api` is importable
+from api import main as api  # noqa: E402
+from eegengine.config import PROJECT_ROOT  # noqa: E402
 from eegengine.inference.engine import CognitiveEngine
 from eegengine.inference.predictors import list_models
 from eegengine.io.stew import CHANNELS, FS, load_recording

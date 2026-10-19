@@ -93,6 +93,38 @@ D15+ deep-model choices.
 3. Calibrate per user with a short rest baseline (already supported) and compare with/without.
 4. Replace heuristic indices in the contract by model outputs (`source: "model"`).
 
-## 9. Results to quote
-Filled in from `results/summary_classical.md`, `results/summary_deep.md`, `results/summary_all.md`
-(see the "Results" section of the README, which is generated from the same files).
+## 9. Results to quote (from results/summary_*.md, generated from the result files)
+
+**T1 rest vs task**
+* Classical, LOSO, 4-s epochs, no rest baseline — pooled macro-F1: LR 0.845, SVM 0.859, RF 0.851,
+  **XGBoost 0.865** (fold macro-F1 0.859 ± 0.139, AUROC 0.941). XGBoost is the best classical model.
+* Same 5 folds, 18-s windows: XGBoost **0.915 ± 0.035** fold macro-F1 (AUROC 0.977); best deep model
+  A8 CNN-LSTM-Transformer 0.773 ± 0.045, EEGNet 0.772 ± 0.099, full hybrid A10 0.758 ± 0.103.
+  XGBoost > A10 and > A8 on per-subject macro-F1, Wilcoxon p = 4.0e-6 and 2.4e-6.
+* Architecture ablation (A6 → A10): 0.701 → 0.730 → 0.773 → 0.751 → 0.758; no branch addition is
+  significant against A10 (all p > 0.08). The Transformer helped most; the GAT branch did not add.
+* Feature ablation (XGBoost, LOSO, pooled macro-F1): A1 spectral 0.810, A2 +entropy 0.826,
+  A3 +wavelet 0.822, A4 +connectivity 0.866, A5 +graph 0.870, all 0.865 → connectivity (PLV/coh)
+  is the family that adds most.
+* Rest baseline raises T1 for every model (XGB 0.865 → 0.924, SVM 0.859 → 0.951) — reported
+  separately, never as a headline (docs/leakage_audit.md §3).
+
+**T3 within-task (confound-free)** — everything is at chance level:
+* XGBoost LOSO pooled macro-F1 0.538 (AUROC 0.544); 5-fold windows 0.543 ± 0.135; deep models
+  0.39–0.51 fold macro-F1 (pooled 0.47–0.54). No difference is significant (p ≥ 0.40).
+* The honest conclusion: with 45 recordings and these features/models, the EEG does not separate
+  moderate from high self-rated workload *within* the task. T1's high scores mostly reflect the
+  rest-vs-task difference. This is the main scientific finding to defend.
+
+**T2 rating level** — pooled macro-F1 0.537–0.565 (AUROC 0.73–0.77): mostly T1 in disguise.
+
+**Calibration** — temperature scaling lowered ECE for the hybrid on T1 (0.098 → 0.055) and for A8
+(0.074 → 0.053) but not for every model (EEGNet 0.086 → 0.105): with only ~6 validation subjects
+per fold, T itself is noisy. Reliability diagrams: results/deep_*/reliability.png.
+
+**Latency (CPU)** — classical: ~41 ms per window for feature extraction + prediction; deep model
+forward pass 0.9 ms (EEGNet) to 22 ms (hybrid, 8-epoch window), 1 thread. End-to-end engine
+latency per window (filter + quality + features + model) is reported in every output (`latency_ms`).
+
+**Leakage audit** — fold integrity 58/58, permutation test 0.506 (chance), feature locality exact,
+subject fingerprint 99.5 % with random splits (why subject-wise CV is required).

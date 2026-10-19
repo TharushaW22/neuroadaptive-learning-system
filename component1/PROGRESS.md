@@ -7,11 +7,11 @@ Running log so work can resume after context compaction. Newest entries at the b
 | 1 Setup + loader + quality | done | 96 recs, 31 tests pass, raw quality 35% good / 45% warn / 20% bad | — |
 | 2 Preprocessing + epoching | done | 7104 epochs (74/rec), hash 6d7dd612; final flags 37% good / 51% warn / 12% bad; 30 ch interpolated in 26 recs; 2 recs <50% usable (kept); 53 tests | — |
 | 3 Features | done | 1499 features (spectral 185, entropy 84, wavelet 266, plv 364, coh 364, graph 236), hash 4041d9e6; 55 s; 40.5 ms/epoch single-window; 18 tests | — |
-| 4 Classical + ablation | in progress | | |
-| 5 Deep + hybrid | todo | | |
-| 6 Engine + API | code done, tested (13 tests) | engine streams on the training epoch grid; online vs offline band power < 5 % apart | export contract/demo once final models exist |
-| 7 Dashboard | in progress | 6 pages written, tsc clean | npm build, demo snapshot, smoke test |
-| 8 Verification + packaging | todo | | |
+| 4 Classical + ablation | done | best = XGB; T1 LOSO pooled F1 .865, T3 .538 (chance); ablation: connectivity adds most; 35 Wilcoxon tests | — |
+| 5 Deep + hybrid | done | T1 5-fold: XGB .915 vs A8 .773, EEGNet .772, A10 .758; T3 all ≈ chance; checkpoints in models/ | — |
+| 6 Engine + API | done | 5 deployable models; contract schema + real example in docs/ | — |
+| 7 Dashboard | done | 6 pages, demo snapshot 9.4 MB (8 recordings), build clean, endpoints smoke-tested | — |
+| 8 Verification + packaging | done | 103 tests pass; leakage audit OK (permutation 0.506); run_all --quick from clean data | — |
 
 ## Log
 - Phase 2 started. docs/proposal.docx is still missing → methods follow the phase prompts (see docs/decisions.md D1).
@@ -35,3 +35,4 @@ Running log so work can resume after context compaction. Newest entries at the b
   T3: LR .501 SVM .481 RF .527 XGB .538 (≈ chance). T2: .537-.565 (AUROC .73-.77).
 - Ablation running (logs/ablation.log), then queued: classical_kfold5 -> deep smoke (logs/deep_smoke.log).
 - Next after smoke: review, then `run_deep.py` full in background (threads 4).
+- All phases done. Final message delivered to the author.

@@ -785,6 +785,31 @@ if not st.session_state.posttest_open:
         with st.chat_message("assistant"):
             with st.spinner("Selecting strategy + prompt..."):
                 decision = st.session_state.svc.decide(state, st.session_state.traits)
+
+                # --- SAFETY OVERRIDE (TWO-WAY) ---
+                from expert_rules import expert_strategy, expert_prompt
+                from schemas import Strategy
+
+                override_reason = None
+
+                # RULE 1: Prevent bad breaks (Student is awake)
+                if decision["strategy"] == "break" and state.fatigue < 0.4:
+                    best_enum = expert_strategy(state, st.session_state.traits)
+                    decision["strategy"] = best_enum.value
+                    decision["prompt"] = expert_prompt(best_enum)
+                    override_reason = f"⚠️ **Safety Override:** The Bandit chose #break, but your fatigue is only {state.fatigue:.2f}. Forced to expert rule: **#{best_enum.value}**."
+
+                # RULE 2: Force a break (Student is exhausted)
+                elif state.fatigue >= 0.70 and decision["strategy"] != "break":
+                    best_enum = Strategy.BREAK
+                    decision["strategy"] = best_enum.value
+                    decision["prompt"] = expert_prompt(best_enum)
+                    override_reason = f"⚠️ **Safety Override:** Your fatigue is critically high ({state.fatigue:.2f}). The system ignored the Bandit and forced a **#break** to protect your cognitive health."
+
+                # Apply the reason to the UI if an override happened
+                if override_reason:
+                    decision["rationale"] = override_reason
+
             st.session_state.last_decision = decision
 
             history = st.session_state.messages[:-1]

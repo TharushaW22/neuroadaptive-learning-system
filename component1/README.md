@@ -92,18 +92,35 @@ Seeds are fixed (42).
 
 ## Running the API and the dashboard
 ```powershell
-# terminal 1 — API on http://localhost:8000 (docs at /docs)
-.venv\Scripts\python -m uvicorn api.main:app --port 8000
+# terminal 1 — API on http://127.0.0.1:8000 (interactive docs at /docs)
+.venv\Scripts\python -m uvicorn api.main:app --host 127.0.0.1 --port 8000
 
-# terminal 2 — dashboard on http://localhost:5173
+# terminal 2 — dashboard on http://127.0.0.1:5173
 cd frontend; npm run dev
 ```
+Linux/macOS: `.venv/bin/python -m uvicorn api.main:app --host 127.0.0.1 --port 8000`.
+
+**How the dashboard reaches the API.** The browser calls `/api/...` on the dashboard's own origin and
+the Vite dev server proxies it (HTTP and the `/api/stream` WebSocket) to `http://127.0.0.1:8000`
+(`frontend/vite.config.ts`). Because the browser never makes a cross-origin request, CORS cannot
+block it. Use `127.0.0.1` rather than `localhost`: on Windows `localhost` may resolve to the IPv6
+address `::1`, where uvicorn is not listening. Options:
+* API on another port/host: `$env:API_TARGET="http://127.0.0.1:8001"; npm run dev` (PowerShell).
+* Call the API directly without the proxy: `$env:VITE_API_URL="http://127.0.0.1:8000"; npm run dev`
+  (CORS is enabled for 127.0.0.1/localhost on ports 5173 and 4173).
+* Built site: `npm run build` then `npm run preview` (http://127.0.0.1:4173, same proxy).
+
+If `uvicorn` reports `[Errno 10048] … only one usage of each socket address`, an older API is still
+running: `netstat -ano | findstr :8000` shows its PID, stop it with `taskkill /PID <pid> /F`.
+If an endpoint needs data that is missing (e.g. `data/raw/STEW/`), the API answers `503` with a hint
+instead of crashing, and the dashboard shows that hint.
+
 The dashboard detects the API automatically. Without the API it switches to **demo mode** and
-replays the bundled snapshot (`frontend/public/demo/`), so it also works fully offline — e.g.
-`npm run build` then open `frontend/dist/` with any static server (`npx vite preview`).
+replays the bundled snapshot (`frontend/public/demo/`), so it also works fully offline.
 Header toggles: Demo / Live API, Projector (larger text), Light / Dark.
 
-Docker (optional): `docker compose up --build` → API on :8000, dashboard on :5173 (needs `data/` and `models/`).
+Docker (optional): `docker compose up --build` → API on :8000, dashboard on :5173; nginx in the
+dashboard container proxies `/api` to the API container (`frontend/nginx.conf`). Needs `data/` and `models/`.
 
 ## Plugging in the team-collected Emotiv data
 1. **Signals** — one text file per recording, same format as STEW: whitespace-separated, no header,

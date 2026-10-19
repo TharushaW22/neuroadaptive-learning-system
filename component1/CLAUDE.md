@@ -41,7 +41,7 @@ calibrated cognitive-state probabilities → timestamped JSON for other componen
 - EDA: `.venv\Scripts\python scripts\explore_dataset.py` → `results/eda/`
 - Quality report: `.venv\Scripts\python scripts\run_quality.py` → `results/quality/`
 - Whole pipeline: `.venv\Scripts\python scripts\run_all.py [--quick] [--from <step>]` (README lists every step)
-- API: `.venv\Scripts\python -m uvicorn api.main:app --port 8000` · dashboard: `cd frontend; npm run dev` (port 5173)
+- API: `.venv\Scripts\python -m uvicorn api.main:app --host 127.0.0.1 --port 8000` · dashboard: `cd frontend; npm run dev` (127.0.0.1:5173; Vite proxies `/api` → 127.0.0.1:8000, so the browser never needs CORS)
 - The first STEW load parses 96 text files (~30 s) and caches to `data/processed/stew_raw_cache.npz`.
 - Machine limits: 4 cores / 16 GB shared with other apps → classical LOSO with 4 workers; never run deep
   training and the classical suites at the same time (D14).

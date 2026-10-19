@@ -26,3 +26,4 @@ Thumbs.db
 results/_smoke/
 results/_audit/
 results/logs/
+frontend/.vite/

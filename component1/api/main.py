@@ -1,6 +1,8 @@
 """FastAPI backend of the EEG Neuro-Cognitive Understanding Engine.
 
-Run:  .venv\\Scripts\\python -m uvicorn api.main:app --reload --port 8000     (from component1/)
+Run:  .venv\\Scripts\\python -m uvicorn api.main:app --host 127.0.0.1 --port 8000   (from component1/)
+      The dashboard reaches it through the Vite proxy at /api (frontend/vite.config.ts), so the browser
+      does not need CORS; CORS below only matters when VITE_API_URL points the browser here directly.
 
 REST
   GET  /health                       liveness + available models
@@ -44,6 +46,19 @@ from eegengine.labels import within_task_label
 app = FastAPI(title="EEG Neuro-Cognitive Understanding Engine", version=__version__,
               description="J26-DS-333 Component 1 — workload is a model prediction; attention, fatigue and "
                           "readiness are heuristic EEG indices (not trained predictions).")
+@app.exception_handler(FileNotFoundError)
+async def missing_file(_request, exc: FileNotFoundError):
+    """Missing data/model files -> a clear 503 (with CORS headers) instead of a bare 500.
+
+    A bare 500 has no CORS headers, so the browser would misreport it as a CORS error.
+    """
+    from fastapi.responses import JSONResponse
+    name = getattr(exc, "filename", None) or str(exc)
+    hint = ("STEW data is missing — put sub01_lo.txt … sub48_hi.txt and ratings.txt in component1/data/raw/STEW/, "
+            "then run scripts/run_preprocess.py and scripts/run_features.py. The dashboard's demo mode works without it.")
+    return JSONResponse(status_code=503, content={"detail": f"file not found: {name}", "hint": hint})
+
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["http://localhost:5173", "http://127.0.0.1:5173", "http://localhost:4173", "http://127.0.0.1:4173"],
@@ -96,9 +111,23 @@ def health():
     return {"status": "ok", "version": __version__, "n_models": len(list_models()), "fs": FS, "channels": CHANNELS}
 
 
+def subject_ratings() -> dict[int, tuple[float, float]]:
+    """Ratings from data/raw/STEW/ratings.txt, or — if the raw data is not present — from the
+    committed EDA table results/eda/recordings.csv (same values, written by explore_dataset.py)."""
+    try:
+        return load_ratings()
+    except FileNotFoundError:
+        p = RESULTS_DIR / "eda" / "recordings.csv"
+        if not p.exists():
+            raise
+        df = pd.read_csv(p)
+        r = df.pivot(index="subject_id", columns="condition", values="rating")
+        return {int(s): (float(r.loc[s, "lo"]), float(r.loc[s, "hi"])) for s in r.index}
+
+
 @app.get("/subjects")
 def subjects():
-    ratings = load_ratings()
+    ratings = subject_ratings()
     out = []
     for s in SUBJECTS:
         lo, hi = ratings[s]
@@ -213,7 +242,9 @@ async def stream(ws: WebSocket, subject: int, condition: str, model: str | None 
         model = check_model(model)
         rec = load_recording(subject, condition)
     except Exception as e:  # noqa: BLE001
-        await ws.send_json({"type": "error", "message": str(getattr(e, "detail", e))})
+        msg = (f"recording sub{subject:02d}_{condition} not found in data/raw/STEW — restore the STEW files "
+               "or switch the dashboard to demo mode") if isinstance(e, FileNotFoundError) else str(getattr(e, "detail", e))
+        await ws.send_json({"type": "error", "message": msg})
         await ws.close()
         return
     eng = CognitiveEngine(model, participant_id=f"sub{subject:02d}", session_id=f"stew-{subject:02d}-{condition}")

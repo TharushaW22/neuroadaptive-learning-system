@@ -28,7 +28,10 @@ needs_data = pytest.mark.skipif(not (DEFAULT_STEW_DIR / "ratings.txt").exists(),
 @pytest.fixture(scope="module")
 def tiny_model(tmp_path_factory):
     d = tmp_path_factory.mktemp("models")
-    F, meta, _ = load_features()
+    try:
+        F, meta, _ = load_features()
+    except FileNotFoundError:
+        pytest.skip("features not generated (run scripts/run_preprocess.py + run_features.py)")
     keep = meta["subject_id"].isin([1, 2, 3, 4, 6, 7]).to_numpy()
     mask, y = task_view(meta[keep].reset_index(drop=True), "workload_binary")
     cols = family_columns(F.columns, ["spectral"])
@@ -114,9 +117,18 @@ def client(tiny_model):
     return TestClient(app)
 
 
-def test_health(client):
-    r = client.get("/health")
-    assert r.status_code == 200 and r.json()["status"] == "ok" and r.json()["n_models"] >= 1
+@pytest.fixture(scope="module")
+def bare_client():
+    """API client that needs neither the raw data nor the generated features."""
+    from fastapi.testclient import TestClient
+
+    from api.main import app
+    return TestClient(app)
+
+
+def test_health(bare_client):
+    r = bare_client.get("/health")
+    assert r.status_code == 200 and r.json()["status"] == "ok"
 
 
 @needs_data
@@ -130,8 +142,8 @@ def test_models(client):
     assert any(m["id"] == "T1_test" for m in client.get("/models").json())
 
 
-def test_schema(client):
-    s = client.get("/schema").json()
+def test_schema(bare_client):
+    s = bare_client.get("/schema").json()
     assert "states" in s["properties"] and "signal_quality" in s["properties"]
 
 
@@ -173,5 +185,32 @@ def test_stream_websocket(client):
         CognitiveStateOutput.model_validate(state["output"])
 
 
-def test_unknown_result_404(client):
-    assert client.get("/results/does_not_exist").status_code == 404
+def test_missing_data_is_503_with_cors(bare_client, monkeypatch):
+    """A missing file must not become a bare 500: those carry no CORS header and the browser
+    misreports them as a CORS error. It must be a 503 with a hint, and keep the CORS header."""
+    import api.main as m
+
+    def boom():
+        raise FileNotFoundError(2, "No such file", "data/raw/STEW/ratings.txt")
+    monkeypatch.setattr(m, "subject_ratings", boom)
+    r = bare_client.get("/subjects", headers={"Origin": "http://localhost:5173"})
+    assert r.status_code == 503
+    assert r.headers.get("access-control-allow-origin") == "http://localhost:5173"
+    assert "hint" in r.json()
+
+
+def test_subjects_fallback_without_raw_data(bare_client, monkeypatch):
+    """/subjects still works from results/eda/recordings.csv when data/raw/STEW is absent."""
+    import api.main as m
+
+    def missing(*_a, **_k):
+        raise FileNotFoundError("ratings.txt")
+    monkeypatch.setattr(m, "load_ratings", missing)
+    s = bare_client.get("/subjects").json()
+    assert len(s) == 48
+    assert next(x for x in s if x["subject_id"] == 1)["rating_hi"] == 8.0
+    assert not next(x for x in s if x["subject_id"] == 42)["rated"]
+
+
+def test_unknown_result_404(bare_client):
+    assert bare_client.get("/results/does_not_exist").status_code == 404

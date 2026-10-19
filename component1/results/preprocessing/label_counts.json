@@ -1,0 +1,126 @@
+{
+  "epochs": {
+    "workload_binary": {
+      "n": 7104,
+      "n_subjects": 48,
+      "classes": {
+        "low": 3552,
+        "high": 3552
+      },
+      "by_condition": {
+        "lo": {
+          "low": 3552,
+          "high": 0
+        },
+        "hi": {
+          "low": 0,
+          "high": 3552
+        }
+      },
+      "unit": "epochs"
+    },
+    "workload_level": {
+      "n": 6660,
+      "n_subjects": 45,
+      "classes": {
+        "low": 3108,
+        "medium": 1702,
+        "high": 1850
+      },
+      "by_condition": {
+        "lo": {
+          "low": 3108,
+          "medium": 222,
+          "high": 0
+        },
+        "hi": {
+          "low": 0,
+          "medium": 1480,
+          "high": 1850
+        }
+      },
+      "unit": "epochs"
+    },
+    "workload_within_task": {
+      "n": 3330,
+      "n_subjects": 45,
+      "classes": {
+        "moderate": 1480,
+        "high": 1850
+      },
+      "by_condition": {
+        "lo": {
+          "moderate": 0,
+          "high": 0
+        },
+        "hi": {
+          "moderate": 1480,
+          "high": 1850
+        }
+      },
+      "unit": "epochs"
+    }
+  },
+  "recordings": {
+    "workload_binary": {
+      "n": 96,
+      "n_subjects": 48,
+      "classes": {
+        "low": 48,
+        "high": 48
+      },
+      "by_condition": {
+        "lo": {
+          "low": 48,
+          "high": 0
+        },
+        "hi": {
+          "low": 0,
+          "high": 48
+        }
+      },
+      "unit": "recordings"
+    },
+    "workload_level": {
+      "n": 90,
+      "n_subjects": 45,
+      "classes": {
+        "low": 42,
+        "medium": 23,
+        "high": 25
+      },
+      "by_condition": {
+        "lo": {
+          "low": 42,
+          "medium": 3,
+          "high": 0
+        },
+        "hi": {
+          "low": 0,
+          "medium": 20,
+          "high": 25
+        }
+      },
+      "unit": "recordings"
+    },
+    "workload_within_task": {
+      "n": 45,
+      "n_subjects": 45,
+      "classes": {
+        "moderate": 20,
+        "high": 25
+      },
+      "by_condition": {
+        "lo": {
+          "moderate": 0,
+          "high": 0
+        },
+        "hi": {
+          "moderate": 20,
+          "high": 25
+        }
+      },
+      "unit": "recordings"
+    }
+  }
+}

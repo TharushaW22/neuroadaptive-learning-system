@@ -1,0 +1,26 @@
+{
+  "config_hash": "6d7dd612",
+  "epochs_file": "data/processed/epochs_6d7dd612.npz",
+  "X_shape": [
+    7104,
+    14,
+    512
+  ],
+  "epochs_per_recording": 74,
+  "normalisation": "none",
+  "n_recordings_with_interpolation": 26,
+  "n_channels_interpolated": 30,
+  "n_channels_detected_not_interpolated": 0,
+  "final_flag_rates": {
+    "good": 0.3722,
+    "warn": 0.5053,
+    "bad": 0.1225
+  },
+  "usable_fraction_overall": 0.8775,
+  "recordings_below_50pct_usable": [
+    "sub27_hi",
+    "sub37_lo"
+  ],
+  "note_low_usable": "These subjects are KEPT. Bad windows are only excluded when an experiment sets exclude_bad_windows=true.",
+  "elapsed_s": 125.5
+}

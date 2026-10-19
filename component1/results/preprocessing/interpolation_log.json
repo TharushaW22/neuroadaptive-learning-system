@@ -1,0 +1,495 @@
+[
+  {
+    "recording": "sub01_lo",
+    "detected": [
+      {
+        "channel": "T7",
+        "reasons": [
+          "noisy",
+          "huge"
+        ],
+        "bad_fraction": 1.0,
+        "std_ratio": 61.58
+      },
+      {
+        "channel": "FC6",
+        "reasons": [
+          "noisy"
+        ],
+        "bad_fraction": 0.784,
+        "std_ratio": 2.69
+      }
+    ],
+    "interpolated": [
+      "T7",
+      "FC6"
+    ],
+    "not_interpolated": []
+  },
+  {
+    "recording": "sub02_hi",
+    "detected": [
+      {
+        "channel": "T7",
+        "reasons": [
+          "noisy"
+        ],
+        "bad_fraction": 0.838,
+        "std_ratio": 2.35
+      },
+      {
+        "channel": "FC6",
+        "reasons": [
+          "noisy"
+        ],
+        "bad_fraction": 0.635,
+        "std_ratio": 1.65
+      }
+    ],
+    "interpolated": [
+      "T7",
+      "FC6"
+    ],
+    "not_interpolated": []
+  },
+  {
+    "recording": "sub04_lo",
+    "detected": [
+      {
+        "channel": "P8",
+        "reasons": [
+          "noisy"
+        ],
+        "bad_fraction": 0.676,
+        "std_ratio": 2.42
+      }
+    ],
+    "interpolated": [
+      "P8"
+    ],
+    "not_interpolated": []
+  },
+  {
+    "recording": "sub04_hi",
+    "detected": [
+      {
+        "channel": "AF3",
+        "reasons": [
+          "huge"
+        ],
+        "bad_fraction": 0.459,
+        "std_ratio": 4.54
+      }
+    ],
+    "interpolated": [
+      "AF3"
+    ],
+    "not_interpolated": []
+  },
+  {
+    "recording": "sub06_lo",
+    "detected": [
+      {
+        "channel": "FC5",
+        "reasons": [
+          "noisy",
+          "huge"
+        ],
+        "bad_fraction": 0.946,
+        "std_ratio": 4.27
+      }
+    ],
+    "interpolated": [
+      "FC5"
+    ],
+    "not_interpolated": []
+  },
+  {
+    "recording": "sub07_lo",
+    "detected": [
+      {
+        "channel": "T7",
+        "reasons": [
+          "noisy"
+        ],
+        "bad_fraction": 0.77,
+        "std_ratio": 0.59
+      }
+    ],
+    "interpolated": [
+      "T7"
+    ],
+    "not_interpolated": []
+  },
+  {
+    "recording": "sub13_lo",
+    "detected": [
+      {
+        "channel": "P8",
+        "reasons": [
+          "noisy",
+          "huge"
+        ],
+        "bad_fraction": 0.946,
+        "std_ratio": 8.63
+      }
+    ],
+    "interpolated": [
+      "P8"
+    ],
+    "not_interpolated": []
+  },
+  {
+    "recording": "sub14_lo",
+    "detected": [
+      {
+        "channel": "F7",
+        "reasons": [
+          "noisy"
+        ],
+        "bad_fraction": 0.635,
+        "std_ratio": 3.13
+      }
+    ],
+    "interpolated": [
+      "F7"
+    ],
+    "not_interpolated": []
+  },
+  {
+    "recording": "sub17_lo",
+    "detected": [
+      {
+        "channel": "FC5",
+        "reasons": [
+          "noisy",
+          "huge"
+        ],
+        "bad_fraction": 0.743,
+        "std_ratio": 5.29
+      }
+    ],
+    "interpolated": [
+      "FC5"
+    ],
+    "not_interpolated": []
+  },
+  {
+    "recording": "sub19_lo",
+    "detected": [
+      {
+        "channel": "FC5",
+        "reasons": [
+          "noisy",
+          "huge"
+        ],
+        "bad_fraction": 0.716,
+        "std_ratio": 4.26
+      }
+    ],
+    "interpolated": [
+      "FC5"
+    ],
+    "not_interpolated": []
+  },
+  {
+    "recording": "sub22_lo",
+    "detected": [
+      {
+        "channel": "F8",
+        "reasons": [
+          "huge"
+        ],
+        "bad_fraction": 0.297,
+        "std_ratio": 4.68
+      }
+    ],
+    "interpolated": [
+      "F8"
+    ],
+    "not_interpolated": []
+  },
+  {
+    "recording": "sub23_hi",
+    "detected": [
+      {
+        "channel": "F3",
+        "reasons": [
+          "noisy",
+          "huge"
+        ],
+        "bad_fraction": 1.0,
+        "std_ratio": 11.44
+      }
+    ],
+    "interpolated": [
+      "F3"
+    ],
+    "not_interpolated": []
+  },
+  {
+    "recording": "sub27_hi",
+    "detected": [
+      {
+        "channel": "F3",
+        "reasons": [
+          "noisy"
+        ],
+        "bad_fraction": 0.932,
+        "std_ratio": 2.5
+      },
+      {
+        "channel": "FC6",
+        "reasons": [
+          "noisy"
+        ],
+        "bad_fraction": 0.797,
+        "std_ratio": 1.26
+      }
+    ],
+    "interpolated": [
+      "F3",
+      "FC6"
+    ],
+    "not_interpolated": []
+  },
+  {
+    "recording": "sub28_hi",
+    "detected": [
+      {
+        "channel": "F7",
+        "reasons": [
+          "huge"
+        ],
+        "bad_fraction": 0.122,
+        "std_ratio": 4.22
+      }
+    ],
+    "interpolated": [
+      "F7"
+    ],
+    "not_interpolated": []
+  },
+  {
+    "recording": "sub30_lo",
+    "detected": [
+      {
+        "channel": "F7",
+        "reasons": [
+          "noisy",
+          "huge"
+        ],
+        "bad_fraction": 0.973,
+        "std_ratio": 17.82
+      },
+      {
+        "channel": "AF3",
+        "reasons": [
+          "huge"
+        ],
+        "bad_fraction": 0.392,
+        "std_ratio": 8.12
+      }
+    ],
+    "interpolated": [
+      "F7",
+      "AF3"
+    ],
+    "not_interpolated": []
+  },
+  {
+    "recording": "sub30_hi",
+    "detected": [
+      {
+        "channel": "FC6",
+        "reasons": [
+          "noisy",
+          "huge"
+        ],
+        "bad_fraction": 0.986,
+        "std_ratio": 8.92
+      }
+    ],
+    "interpolated": [
+      "FC6"
+    ],
+    "not_interpolated": []
+  },
+  {
+    "recording": "sub33_lo",
+    "detected": [
+      {
+        "channel": "T7",
+        "reasons": [
+          "noisy",
+          "huge"
+        ],
+        "bad_fraction": 0.892,
+        "std_ratio": 6.87
+      }
+    ],
+    "interpolated": [
+      "T7"
+    ],
+    "not_interpolated": []
+  },
+  {
+    "recording": "sub34_hi",
+    "detected": [
+      {
+        "channel": "T7",
+        "reasons": [
+          "noisy",
+          "huge"
+        ],
+        "bad_fraction": 0.635,
+        "std_ratio": 8.22
+      }
+    ],
+    "interpolated": [
+      "T7"
+    ],
+    "not_interpolated": []
+  },
+  {
+    "recording": "sub38_lo",
+    "detected": [
+      {
+        "channel": "F3",
+        "reasons": [
+          "noisy",
+          "huge"
+        ],
+        "bad_fraction": 0.973,
+        "std_ratio": 6.69
+      }
+    ],
+    "interpolated": [
+      "F3"
+    ],
+    "not_interpolated": []
+  },
+  {
+    "recording": "sub38_hi",
+    "detected": [
+      {
+        "channel": "F3",
+        "reasons": [
+          "noisy",
+          "huge"
+        ],
+        "bad_fraction": 1.0,
+        "std_ratio": 36.98
+      }
+    ],
+    "interpolated": [
+      "F3"
+    ],
+    "not_interpolated": []
+  },
+  {
+    "recording": "sub40_lo",
+    "detected": [
+      {
+        "channel": "AF3",
+        "reasons": [
+          "noisy",
+          "huge"
+        ],
+        "bad_fraction": 1.0,
+        "std_ratio": 8.37
+      }
+    ],
+    "interpolated": [
+      "AF3"
+    ],
+    "not_interpolated": []
+  },
+  {
+    "recording": "sub40_hi",
+    "detected": [
+      {
+        "channel": "AF3",
+        "reasons": [
+          "noisy",
+          "huge"
+        ],
+        "bad_fraction": 0.932,
+        "std_ratio": 6.23
+      }
+    ],
+    "interpolated": [
+      "AF3"
+    ],
+    "not_interpolated": []
+  },
+  {
+    "recording": "sub41_lo",
+    "detected": [
+      {
+        "channel": "F3",
+        "reasons": [
+          "noisy",
+          "huge"
+        ],
+        "bad_fraction": 1.0,
+        "std_ratio": 22.56
+      }
+    ],
+    "interpolated": [
+      "F3"
+    ],
+    "not_interpolated": []
+  },
+  {
+    "recording": "sub45_lo",
+    "detected": [
+      {
+        "channel": "F7",
+        "reasons": [
+          "huge"
+        ],
+        "bad_fraction": 0.027,
+        "std_ratio": 4.08
+      }
+    ],
+    "interpolated": [
+      "F7"
+    ],
+    "not_interpolated": []
+  },
+  {
+    "recording": "sub45_hi",
+    "detected": [
+      {
+        "channel": "FC5",
+        "reasons": [
+          "noisy"
+        ],
+        "bad_fraction": 0.635,
+        "std_ratio": 2.35
+      }
+    ],
+    "interpolated": [
+      "FC5"
+    ],
+    "not_interpolated": []
+  },
+  {
+    "recording": "sub46_hi",
+    "detected": [
+      {
+        "channel": "AF4",
+        "reasons": [
+          "huge"
+        ],
+        "bad_fraction": 0.027,
+        "std_ratio": 4.23
+      }
+    ],
+    "interpolated": [
+      "AF4"
+    ],
+    "not_interpolated": []
+  }
+]

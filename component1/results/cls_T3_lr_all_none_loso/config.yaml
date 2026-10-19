@@ -1,0 +1,17 @@
+experiment_id: cls_T3_lr_all_none_loso
+kind: classical
+task: workload_within_task
+model: lr
+feature_set: all
+families:
+- spectral
+- entropy
+- wavelet
+- plv
+- coh
+- graph
+normalisation: none
+cv: loso
+seed: 42
+selection: null
+exclude_bad_windows: false

@@ -1,0 +1,17 @@
+experiment_id: cls_T1_rf_all_rest_baseline_loso
+kind: classical
+task: workload_binary
+model: rf
+feature_set: all
+families:
+- spectral
+- entropy
+- wavelet
+- plv
+- coh
+- graph
+normalisation: rest_baseline
+cv: loso
+seed: 42
+selection: null
+exclude_bad_windows: false

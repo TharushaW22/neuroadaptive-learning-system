@@ -1,0 +1,12 @@
+# API image: the eegengine package + FastAPI. data/, models/ and results/ are mounted at run time.
+FROM python:3.11-slim
+WORKDIR /app
+ENV PIP_NO_CACHE_DIR=1 PYTHONUNBUFFERED=1
+COPY requirements.txt pyproject.toml ./
+RUN pip install --extra-index-url https://download.pytorch.org/whl/cpu -r requirements.txt
+COPY src ./src
+COPY api ./api
+COPY configs ./configs
+RUN pip install -e .
+EXPOSE 8000
+CMD ["uvicorn", "api.main:app", "--host", "0.0.0.0", "--port", "8000"]

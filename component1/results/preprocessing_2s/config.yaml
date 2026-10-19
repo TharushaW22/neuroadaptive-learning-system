@@ -1,0 +1,53 @@
+# 2-second epoch variant of preprocess.yaml (everything else identical).
+# config hash, so a new epochs_<hash>.npz is written next to the old one.
+seed: 42
+
+data:
+  stew_dir: data/raw/STEW
+  cache: data/processed/stew_raw_cache.npz
+  out_dir: data/processed
+
+filter:
+  l_freq: 0.5            # Hz, zero-phase FIR (firwin, Hamming)
+  h_freq: 45.0
+  notch_enabled: true    # Emotiv already notches 50/60 Hz on board and 45 Hz LP makes this
+  notch_freq: 50.0       # mostly redundant, but it is cheap and protects other headsets
+
+quality:                 # applied to the FILTERED signal; window/step are taken from `epoching`
+  flat_std_uv: 0.5
+  max_abs_uv: 150.0      # chosen from the threshold sweep in results/preprocessing (see D7)
+  var_z_thresh: 3.5
+  hf_band_hz: [30.0, 45.0]
+  hf_ratio_thresh: 0.25
+  line_freq_hz: 50.0
+  line_ratio_thresh: 10.0
+  max_bad_channels_warn: 2
+  blink_channels: [AF3, AF4, F7, F8]
+  blink_max_uv: 300.0    # frontal amp/variance-only failures below this are blinks -> "warn"
+
+bad_channels:
+  interpolate: true
+  min_bad_fraction: 0.6  # bad in >= 60 % of windows -> persistently bad
+  max_std_ratio: 4.0     # or median window std > 4x that of the median channel
+  max_interpolated: 3    # never rebuild more than 3 of 14 channels
+
+ica:
+  enabled: false         # optional; AF3/AF4 used as EOG proxies
+  method: fastica
+  n_components: 13
+  eog_proxies: [AF3, AF4]
+  eog_z_thresh: 3.0
+  max_removed: 2
+
+epoching:
+  window_s: 2.0
+  step_s: 1.0            # 50 % overlap
+
+normalisation: none      # none | epoch_zscore | rest_baseline (signal level). Feature-level
+                         # rest baseline is applied in Phase 4 experiments instead (see D9).
+
+exclude_bad_windows_from_training: false   # flags are kept either way; experiments can opt in
+
+plots:
+  psd_subjects: [1, 38]
+  out_dir: results/preprocessing_2s

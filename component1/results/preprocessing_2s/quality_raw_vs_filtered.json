@@ -1,0 +1,63 @@
+{
+  "n_windows": 14304,
+  "raw_dc_removed": {
+    "good": 0.4141,
+    "warn": 0.4875,
+    "bad": 0.0984
+  },
+  "filtered": {
+    "good": 0.4153,
+    "warn": 0.513,
+    "bad": 0.0717
+  },
+  "filtered_interpolated_final": {
+    "good": 0.4961,
+    "warn": 0.4379,
+    "bad": 0.066
+  },
+  "amplitude_threshold_sweep_filtered": {
+    "100": {
+      "good": 0.2534,
+      "warn": 0.6065,
+      "bad": 0.14
+    },
+    "120": {
+      "good": 0.3272,
+      "warn": 0.5717,
+      "bad": 0.1011
+    },
+    "150": {
+      "good": 0.4153,
+      "warn": 0.513,
+      "bad": 0.0717
+    },
+    "200": {
+      "good": 0.494,
+      "warn": 0.4539,
+      "bad": 0.0522
+    }
+  },
+  "phase1_raw_report_rules": "see results/quality/quality_summary.json (no blink tolerance)",
+  "quality_config": {
+    "window_s": 2.0,
+    "step_s": 1.0,
+    "flat_std_uv": 0.5,
+    "max_abs_uv": 150.0,
+    "var_z_thresh": 3.5,
+    "hf_band_hz": [
+      30.0,
+      45.0
+    ],
+    "hf_ratio_thresh": 0.25,
+    "line_freq_hz": 50.0,
+    "line_ratio_thresh": 10.0,
+    "max_bad_channels_warn": 2,
+    "blink_channels": [
+      "AF3",
+      "AF4",
+      "F7",
+      "F8"
+    ],
+    "blink_max_uv": 300.0
+  }
+}

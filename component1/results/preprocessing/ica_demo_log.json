@@ -1,0 +1,46 @@
+{
+  "sub01_lo": {
+    "n_components": 13,
+    "removed_components": [],
+    "eog_scores_max_abs": [],
+    "eog_proxies": [
+      "AF3",
+      "AF4"
+    ]
+  },
+  "sub01_hi": {
+    "n_components": 13,
+    "removed_components": [
+      0
+    ],
+    "eog_scores_max_abs": [
+      0.947
+    ],
+    "eog_proxies": [
+      "AF3",
+      "AF4"
+    ]
+  },
+  "sub38_lo": {
+    "n_components": 13,
+    "removed_components": [
+      0
+    ],
+    "eog_scores_max_abs": [
+      0.969
+    ],
+    "eog_proxies": [
+      "AF3",
+      "AF4"
+    ]
+  },
+  "sub38_hi": {
+    "n_components": 13,
+    "removed_components": [],
+    "eog_scores_max_abs": [],
+    "eog_proxies": [
+      "AF3",
+      "AF4"
+    ]
+  }
+}

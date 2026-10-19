@@ -1,0 +1,14 @@
+experiment_id: cls_T1_xgb_A4_spectral_connectivity_rest_baseline_loso
+kind: classical
+task: workload_binary
+model: xgb
+feature_set: A4_spectral_connectivity
+families:
+- spectral
+- plv
+- coh
+normalisation: rest_baseline
+cv: loso
+seed: 42
+selection: null
+exclude_bad_windows: false

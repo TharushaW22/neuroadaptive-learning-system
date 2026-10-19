@@ -1,0 +1,12 @@
+experiment_id: cls_T3_xgb_A1_spectral_none_loso
+kind: classical
+task: workload_within_task
+model: xgb
+feature_set: A1_spectral
+families:
+- spectral
+normalisation: none
+cv: loso
+seed: 42
+selection: null
+exclude_bad_windows: false

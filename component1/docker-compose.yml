@@ -1,0 +1,15 @@
+# Optional: run the API and the dashboard in containers.
+#   docker compose up --build      -> API http://localhost:8000, dashboard http://localhost:5173
+# The API needs the generated data (data/), results (results/) and models (models/) — mounted read-only.
+services:
+  api:
+    build: { context: ., dockerfile: Dockerfile.api }
+    ports: ["8000:8000"]
+    volumes:
+      - ./data:/app/data:ro
+      - ./results:/app/results:ro
+      - ./models:/app/models:ro
+  frontend:
+    build: { context: ./frontend }
+    ports: ["5173:80"]
+    depends_on: [api]

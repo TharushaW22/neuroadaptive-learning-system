@@ -1,0 +1,28 @@
+# Phase 3 feature extraction. Output columns are prefixed by family so experiments can select
+# families (spectral_, entropy_, wavelet_, plv_, coh_, graph_).
+preprocess_config: preprocess.yaml     # which epochs to use (found via its config hash)
+
+families: [spectral, entropy, wavelet, plv, coh, graph]
+
+welch:
+  nperseg: 256          # 2 s segments -> 0.5 Hz resolution on 4 s epochs
+  noverlap: 128
+
+wavelet:
+  name: db4
+  level: 5
+
+connectivity:
+  bands: [theta, alpha, beta, gamma]
+  coh_nperseg: 128      # 1 s segments, 50 % overlap -> 7 segments per 4 s epoch
+  filter_order: 4       # Butterworth band filter before the Hilbert transform (PLV)
+
+graph:
+  source: plv
+  threshold: proportional   # proportional | absolute | none
+  proportion: 0.3           # keep the strongest 30 % of edges
+  absolute: 0.5             # used when threshold = absolute
+
+n_jobs: 6
+out_dir: data/processed
+results_dir: results/features

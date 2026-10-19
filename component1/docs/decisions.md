@@ -60,4 +60,5 @@ but are kept. Experiments train on all epochs by default (the model sees realist
 
 ## D11 — FIR filter edges
 MNE's default transition bands are 0.5 Hz at the 0.5 Hz edge and 11.25 Hz at the 45 Hz edge
-(–6 dB at ~50.6 Hz). Combined with the 50 Hz notch, power above 50 Hz is suppressed by > 60 dB.
+(–6 dB at ~50.6 Hz). Combined with the 50 Hz notch, power at 57–64 Hz drops by roughly 50–60 dB
+(results/preprocessing/psd_before_after_*.png).

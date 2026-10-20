@@ -68,6 +68,10 @@ class EvaluationSignal(BaseModel):
     post_score: float = Field(..., ge=0, le=100)
     learning_gain: Optional[float] = None
     normalized_gain: Optional[float] = None
+    # objective cognitive load (EEG Workload Delta) ----
+    workload_start: Optional[float] = None       # baseline workload (first 2 readings)
+    workload_end: Optional[float] = None         # workload at end of session
+    workload_delta: Optional[float] = None       # workload_end - workload_start
     timestamp: datetime = Field(default_factory=datetime.utcnow)
 
     def compute(self) -> "EvaluationSignal":

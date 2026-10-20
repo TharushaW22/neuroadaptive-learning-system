@@ -1,5 +1,5 @@
-
 import json as _json
+import numpy as np                      
 import streamlit as st
 
 from schemas import (CognitiveState, StudentTraits, LearningStyle, Interest,
@@ -639,6 +639,16 @@ if "winner_name" not in st.session_state:
 if "interactions" not in st.session_state:
     st.session_state.interactions = 0
 
+# ✅ NEW — Objective cognitive load (EEG Workload Delta)
+if "baseline_workload_samples" not in st.session_state:
+    st.session_state.baseline_workload_samples = []   # first 2 readings
+if "workload_start" not in st.session_state:
+    st.session_state.workload_start = None
+if "workload_end" not in st.session_state:
+    st.session_state.workload_end = None
+if "workload_delta" not in st.session_state:
+    st.session_state.workload_delta = None
+
 
 # ============================================================
 # SIDEBAR
@@ -695,6 +705,13 @@ with st.sidebar:
     st.subheader("3️⃣ Session Status")
     st.metric("💬 Interactions", st.session_state.interactions)
 
+    # ✅ NEW — live preview of the objective baseline
+    if st.session_state.baseline_workload_samples:
+        st.caption(
+            f"🧠 Baseline workload (first 2 readings): "
+            f"**{np.mean(st.session_state.baseline_workload_samples):.2f}**"
+        )
+
     current_topic = detect_topic(st.session_state.messages)
     if current_topic != "general":
         st.caption(f"Detected topic: **{TOPIC_QUESTION_BANK[current_topic]['name']}**")
@@ -741,6 +758,11 @@ with st.sidebar:
         st.session_state.posttest_topic = None
         st.session_state.posttest_topic_name = None
         st.session_state.interactions = 0
+        # ✅ NEW — reset workload-delta tracking
+        st.session_state.baseline_workload_samples = []
+        st.session_state.workload_start = None
+        st.session_state.workload_end = None
+        st.session_state.workload_delta = None
         st.rerun()
 
 
@@ -781,6 +803,10 @@ if not st.session_state.posttest_open:
             attention=attention, fatigue=fatigue,
             confusion=confusion, readiness=readiness, workload=workload)
         st.session_state.last_state = state
+
+        # ✅ NEW — capture the baseline workload (first 2 readings = "first 2 minutes")
+        if len(st.session_state.baseline_workload_samples) < 2:
+            st.session_state.baseline_workload_samples.append(float(state.workload))
 
         with st.chat_message("assistant"):
             with st.spinner("Selecting strategy + prompt..."):
@@ -901,15 +927,55 @@ if st.session_state.posttest_open:
                       if answers[i] == item["correct"])
         post_score = correct / len(questions) * 100
 
+        # objective cognitive load (EEG Workload Delta)
+        # workload_start  = mean of first 2 readings ("first 2 minutes")
+        # workload_end    = current slider value  ("last reading")
+        workload_delta = None
+        if st.session_state.baseline_workload_samples:
+            workload_start = float(np.mean(st.session_state.baseline_workload_samples))
+            workload_end   = float(workload)
+            workload_delta = workload_end - workload_start
+            st.session_state.workload_start = workload_start
+            st.session_state.workload_end   = workload_end
+            st.session_state.workload_delta = workload_delta
+
         sig = EvaluationSignal(
             pre_score=st.session_state.pre_score,
-            post_score=post_score).compute()
+            post_score=post_score,
+            workload_start=st.session_state.workload_start,
+            workload_end=st.session_state.workload_end,
+            workload_delta=workload_delta,
+        ).compute()
 
         st.success(
             f"Post-test: **{post_score:.0f}%** ({correct}/{len(questions)}) | "
             f"Learning gain: **{sig.learning_gain:.2f}** | "
             f"Normalized gain: **{sig.normalized_gain:.2f}**"
         )
+
+        # display the objective cognitive-load change
+        if workload_delta is not None:
+            if workload_delta < 0:
+                st.success(
+                    f"🧠 **EEG Workload Delta = {workload_delta:+.2f}** "
+                    f"(start {st.session_state.workload_start:.2f} → "
+                    f"end {st.session_state.workload_end:.2f}) — "
+                    f"Load **decreased** after learning."
+                )
+            elif workload_delta > 0:
+                st.warning(
+                    f"🧠 **EEG Workload Delta = {workload_delta:+.2f}** "
+                    f"(start {st.session_state.workload_start:.2f} → "
+                    f"end {st.session_state.workload_end:.2f}) — "
+                    f"Load **increased** after learning."
+                )
+            else:
+                st.info(
+                    f"🧠 **EEG Workload Delta = {workload_delta:+.2f}** "
+                    f"(start {st.session_state.workload_start:.2f} → "
+                    f"end {st.session_state.workload_end:.2f}) — "
+                    f"Workload unchanged."
+                )
 
         d = st.session_state.last_decision
         s = st.session_state.last_state
@@ -923,7 +989,7 @@ if st.session_state.posttest_open:
         st.session_state.posttest_questions = None
         st.session_state.posttest_topic = None
         st.session_state.posttest_topic_name = None
-        
+
         if post_score >= 66:
             st.balloons()
             st.success("🎉 Great job on the post-test!")

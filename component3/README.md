@@ -1,32 +1,62 @@
-# Component 3 — Comparative Explainable AI (XAI) Study
+# Component 3 — Comparative Explainable AI (XAI) evaluation
 
-## 1. Overview
+Part of the Neuro-Adaptive Intelligent Learning System (J26-DS-333). Component 3 answers:
+**which explanation method can we trust for the system's cognitive-state predictions?**
 
-Component 3 focuses on comparing different Explainable Artificial Intelligence (XAI) methods to identify the most suitable explanation techniques for cognitive-state prediction in the Neuro-Adaptive Intelligent Learning System.
+It explains the **real** EEG workload model of Component 1 on the **real** STEW dataset — no
+synthetic data — with four methods (KernelSHAP, Conditional SHAP, LIME, Integrated Gradients),
+measures the quality of every explanation, checks that those quality metrics are themselves
+reliable, compares the methods statistically at the subject level, ranks them without fixing
+anyone's preferred weights (TOPSIS + SMAA), and hands the recommendation to Component 4.
 
-## 2. Research Objective
+## How it works
 
-To systematically evaluate different XAI methods and determine which methods are most appropriate for EEG-based, computer-vision-based, and multimodal cognitive-state predictions.
+1. **Data** — STEW (48 people, rest vs. a demanding task, 14 EEG channels) is cleaned and cut into
+   windows with Component 1's own code. Component 1 is only read, never changed.
+2. **Model** — Component 1's CNN-LSTM-Transformer (`T1_A8`). Per-fold copies are retrained so each
+   explained person was never seen by the model (until then results are labelled IN-SAMPLE).
+3. **Features** — each 18-s window is split into 14 channels × 6 frequency bands = 84 parts.
+4. **Explanations** — every method scores the same 84 parts, so comparisons are like-for-like.
+5. **Quality** — fidelity (deletion/insertion), stability, robustness, sparsity, cost, agreement.
+6. **Trust in the metrics** — test-retest ICC, response to deliberately degraded explanations,
+   redundancy, and a negative control (the model with random weights).
+7. **Statistics** — subject level: Friedman, Wilcoxon-Holm, effect sizes, bootstrap CIs,
+   Bayesian signed-rank with a region of practical equivalence (ROPE).
+8. **Ranking** — TOPSIS under thousands of random weightings (SMAA) → chance of ranking first.
+9. **Output** — a JSON export + Python functions for Component 4, and a dashboard for everyone.
 
-## 3. Scope
+## Setup (macOS / Linux, Python 3.13)
 
-- Evaluate SHAP, LIME, and other suitable XAI methods.
-- Generate explanations for cognitive-state predictions.
-- Compare explanation quality across EEG, computer vision, and multimodal data.
-- Evaluate explanation fidelity, stability, robustness, interpretability, and computational cost.
-- Investigate differences and conflicts between explanations from different modalities.
-- Develop an evidence-based framework for selecting appropriate XAI methods.
+```bash
+cd component3
+python3.13 -m venv .venv
+.venv/bin/pip install -r requirements.txt
+source env.sh            # optional: PYTHONPATH for Component 1 (scripts do this themselves)
+```
+Windows: `py -3.13 -m venv .venv`, `.venv\Scripts\pip install -r requirements.txt`, `. .\env.ps1`.
 
-## 4. Initial Development Plan
+Place STEW in `component3/data/raw/STEW/` (`sub01_lo.txt` … `sub48_hi.txt`, `ratings.txt`), then:
 
-1. Prepare a small sample dataset for testing.
-2. Train or use a simple prediction model.
-3. Apply selected XAI methods.
-4. Evaluate and compare the generated explanations.
-5. Develop visualizations and a research dashboard.
+```bash
+.venv/bin/python scripts/build_data.py                         # ~1 min -> data/processed/
+.venv/bin/python -m pytest                                     # tests (add -m "not slow" for a quick run)
+.venv/bin/python scripts/train_fold_models.py --context eeg_T1_A8   # fold models (~30–45 min)
+.venv/bin/python scripts/run_experiment.py --pilot             # pilot (~15-30 min)
+.venv/bin/python scripts/run_experiment.py                     # full experiment (~10-11 h on an M1; resumable)
+.venv/bin/streamlit run dashboard/app.py                       # dashboard
+```
 
-## 5. Important Note
+The full run can be stopped and restarted at any time: finished explanations are never recomputed.
 
-Initial experiments may use synthetic data. Results obtained from synthetic data will be treated as preliminary demonstrations and will not be presented as validated findings from real learner data.
+## Folders
 
-The component will later be integrated with the EEG, computer vision, and multimodal prediction components.
+`configs/` all settings · `src/xaicomp/` the library · `scripts/` entry points · `dashboard/` ·
+`tests/` · `docs/` (PLAN, PROGRESS, CODE_GUIDE, questions_for_team, ai_use_log) ·
+`data/`, `artifacts/` (git-ignored) · `results/<run>/` outputs.
+
+## Honesty notes
+
+* Results from the deployed model are **IN-SAMPLE** (it was trained on every subject) and are
+  labelled so everywhere; final results need the fold models.
+* PILOT runs use small budgets and are for checking the pipeline only.
+* Component 2 (vision) is not available yet; the adapter interface is ready for it.

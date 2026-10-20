@@ -1,0 +1,27 @@
+# Explanation-quality metrics (Steps 6-7). Direction: + = higher is better, - = lower is better.
+fidelity:
+  step_features: 5            # remove / insert 5 of the 70 features per curve point (15 points)
+  n_random_orders: 5          # random-order baseline (same orders for every method of an instance)
+  modes: [off_manifold, on_manifold]
+  on_manifold_replacement: donor   # donor (marginal) | conditional
+  # Caveat recorded in docs: donor replacement is also the value function of KernelSHAP/LIME/IG-donor,
+  # so on-manifold fidelity may favour them; off-manifold (zero) favours none of the four.
+
+robustness:
+  noise_scale: 0.1            # sigma = 0.1 x C1 channel scale (same as C1's training augmentation)
+  require_same_label: true    # only score perturbations whose predicted label does not flip
+
+agreement:
+  top_k: 10
+
+sparsity:
+  mass_fraction: 0.8          # also report how many features carry 80 % of |attribution|
+
+# Criteria offered to the ranking (Step 12). Reliability decides which survive (Step 9).
+criteria:
+  fidelity_on:     {direction: +, plain: "Does the explanation match what the model really does? (Fidelity, realistic removal)"}
+  fidelity_off:    {direction: +, plain: "Does the explanation match what the model really does? (Fidelity, zero removal)"}
+  stability:       {direction: +, plain: "Same answer when run again? (Stability)"}
+  robustness:      {direction: +, plain: "Same answer when the EEG is slightly noisy? (Robustness)"}
+  sparsity:        {direction: +, plain: "Short, focused explanation? (Sparsity, Gini)"}
+  cost_seconds:    {direction: -, plain: "How long does it take? (Cost, seconds)"}

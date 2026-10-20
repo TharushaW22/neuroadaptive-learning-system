@@ -1,0 +1,45 @@
+# Compute budgets (D6). `full` is the final experiment; `pilot` overrides it for a ~30-min run.
+# `full` = the budget RECOMMENDED from the measured pilot / budget-study costs (docs/PROGRESS.md):
+# ~10-11 h on the Apple M1 dev machine with 4 workers and nothing else running (measured
+# 320 model evaluations/s in total; ~56k evaluations per window), resumable. Every method gets the same K = 4
+# donor windows (same reference distribution); coalition counts from the stability-vs-cost study.
+contexts: [eeg_T1_A8, eeg_T1_A8_randomised]
+screening_only_contexts: [eeg_T1_xgb]   # applicability screening only (D4 optional context)
+max_seconds_per_instance: 600           # screening check 6: estimated explainer cost per instance
+
+full:
+  subjects: all                 # all 48 T1 subjects
+  instances_per_subject: 4      # 2 rest + 2 task windows per subject (2 -> ~6 h instead of ~11 h)
+  seeds: [0, 1, 2]              # explainer repeats -> stability, ICC
+  selection_seed: 2026
+  n_noise: 1                    # robustness: noisy copies per instance
+  torch_threads: 4               # main process (manifest); workers always use 1 thread
+  workers: 4                     # Apple M1 = 4 performance + 4 efficiency cores, 8.6 GB RAM (~0.4 GB per worker)
+  degradation_instances: 24      # windows used for the fidelity-degradation reliability check
+  control:                      # negative-control context uses fewer instances
+    subjects_per_fold: 2
+    instances_per_subject: 2
+  budgets:
+    kernel_shap: {nsamples: 1000, k_donors: 4}
+    conditional_shap: {nsamples: 1000, k_donors: 4}
+    lime: {num_samples: 1000, k_donors: 4}
+    ig: {n_steps: 32, k_donors: 4}
+    ig_zero: {n_steps: 32}
+    fidelity: {k_donors: 4}
+
+pilot:
+  subjects: [2, 14, 3, 1, 5, 11]   # 6 subjects, at least one from each of C1's 5 folds
+  instances_per_subject: 2
+  seeds: [0, 1]
+  n_noise: 1
+  degradation_instances: 4
+  control:
+    subjects_per_fold: 1
+    instances_per_subject: 1
+  budgets:
+    kernel_shap: {nsamples: 300, k_donors: 2}
+    conditional_shap: {nsamples: 300, k_donors: 2}
+    lime: {num_samples: 300, k_donors: 2}
+    ig: {n_steps: 16, k_donors: 2}
+    ig_zero: {n_steps: 16}
+    fidelity: {k_donors: 2}

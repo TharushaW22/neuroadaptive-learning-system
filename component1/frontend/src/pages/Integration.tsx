@@ -1,4 +1,4 @@
-import { Card, Notice } from "../components/ui";
+import { Card, Explain, Notice } from "../components/ui";
 import { API_URL, isDemo } from "../lib/api";
 import { useStream } from "../lib/stream";
 import type { CognitiveStateOutput } from "../lib/types";
@@ -59,6 +59,7 @@ export default function Integration() {
               </tr>))}</tbody>
           </table>
         </div>
+        <Explain>How the other parts of the group project read this engine's results over the network.</Explain>
         <p className="mt-2 text-xs text-ink-3">Base URL: <span className="num">{isDemo() ? "(demo mode — offline snapshot)" : API_URL}</span></p>
       </Card>
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
@@ -75,6 +76,7 @@ export default function Integration() {
               </table>
             </div>
           )}
+          <Explain>Every field the engine sends out every 2 seconds, with its meaning.</Explain>
         </Card>
         <Card title={live ? `Live JSON — window ${live.window_index}` : "Sample JSON (engine output)"}
           subtitle={live ? "The latest output of the running stream" : "Start a stream to see live outputs; this is a real output from /contract/sample"}>
@@ -83,6 +85,7 @@ export default function Integration() {
               {JSON.stringify({ ...shown, connectivity: { ...shown.connectivity, matrix: `[14 x 14 matrix — first row: ${shown.connectivity.matrix[0].slice(0, 4).join(", ")}, …]` } }, null, 2)}
             </pre>
           ) : <Notice>{sample.error ?? "Loading…"}</Notice>}
+          <Explain>One real message exactly as the other components receive it.</Explain>
         </Card>
       </div>
     </div>

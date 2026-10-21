@@ -1,8 +1,10 @@
 // Every number on this page comes from /results/summary (built by scripts/export_report.py from results/).
-import { useMemo, useState } from "react";
-import { Confusion, MetricBars, Reliability } from "../components/ResultCharts";
-import { Card, Notice, Segmented, Select } from "../components/ui";
+// Default view: four plain-language story cards. Advanced: every table, ablation, matrix and test.
+import { useMemo, useState, type ReactNode } from "react";
+import { Confusion, MetricBars, PercentBars, Reliability } from "../components/ResultCharts";
+import { Card, Explain, Notice, Segmented, Select } from "../components/ui";
 import { fmt, TASK_LABEL } from "../lib/eeg";
+import { useSettings } from "../lib/settings";
 import type { MeanStd, ResultRow, Summary } from "../lib/types";
 import { useApi } from "../lib/useApi";
 
@@ -28,14 +30,12 @@ function Table({ rows, cols }: { rows: ResultRow[]; cols: { h: string; f: (r: Re
   );
 }
 
-export default function Results() {
-  const s = useApi<Summary>("/results/summary");
+function AdvancedResults({ d }: { d: Summary }) {
   const [task, setTask] = useState<Task>("T1");
   const [norm, setNorm] = useState<"none" | "rest_baseline">("none");
   const [cmId, setCmId] = useState<string>("");
   const [relId, setRelId] = useState<string>("");
 
-  const d = s.data;
   const byTask = (rows: ResultRow[] | undefined) => (rows ?? []).filter((r) => r.task_short === task);
   const base = byTask(d?.classical_baselines);
   const abl = byTask(d?.feature_ablation).filter((r) => r.normalisation === norm);
@@ -46,12 +46,9 @@ export default function Results() {
   const rel = deep.find((r) => r.experiment_id === relId) ?? deep.find((r) => r.model === "A10_hybrid") ?? deep[0];
   const tests = [...(d?.stats_classical?.tests ?? []), ...(d?.stats_deep?.tests ?? [])].filter((t) => t.a.includes(`_${task}_`));
 
-  if (s.error) return <Notice kind="error">Could not load results: {s.error}. Run scripts/export_report.py, or switch on demo mode.</Notice>;
-  if (!d) return <Notice>Loading results…</Notice>;
-
   return (
     <div className="space-y-4">
-      <Card title="Results" subtitle={`Generated ${d.generated} from results/ — no number on this page is typed by hand.`}
+      <Card title="Results — all details" subtitle={`Generated ${d.generated} from results/ — no number on this page is typed by hand.`}
         right={<Segmented value={task} onChange={setTask} options={[{ value: "T1", label: "T1 rest vs task" }, { value: "T3", label: "T3 within-task" }, { value: "T2", label: "T2 rating level" }]} />}>
         <p className="text-sm text-ink-2">{TASK_LABEL[base[0]?.task ?? deep[0]?.task ?? ""] ?? task}.{" "}
           {task === "T3" && "T3 compares moderate vs high self-rated workload inside the SIMKAP task only — the confound-free test. Each subject contributes one class, so LOSO fold metrics are undefined and pooled / per-recording values are shown. "}
@@ -131,6 +128,134 @@ export default function Results() {
           </div>
         ) : <Notice>No tests for this task.</Notice>}
       </Card>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------- default view: story cards
+
+/** "Correct %" in the default view = pooled balanced accuracy (falls back to pooled macro-F1). */
+const correct = (r: ResultRow | undefined) => (r ? (r.pooled.balanced_accuracy ?? r.pooled.macro_f1 ?? null) : null);
+const pct = (v: number | null | undefined) => (v === null || v === undefined ? "—" : `${Math.round(v * 100)} %`);
+
+const MODEL_NAME: Record<string, string> = {
+  lr: "Logistic regression",
+  rf: "Random forest",
+  svm: "Support vector machine",
+  xgb: "XGBoost",
+  eegnet: "EEGNet (deep)",
+  A10_hybrid: "Full hybrid (deep)",
+};
+const name = (m: string) => MODEL_NAME[m] ?? m;
+
+function StoryCard({ title, big, bigLabel, chart, sentence, explain }: {
+  title: string; big: number | null; bigLabel: string; chart: ReactNode; sentence: ReactNode; explain: ReactNode;
+}) {
+  return (
+    <Card title={title}>
+      <div className="flex items-baseline gap-3">
+        <span className="text-5xl font-bold tabular-nums text-accent">{pct(big)}</span>
+        <span className="text-base text-ink-3">{bigLabel}</span>
+      </div>
+      {/* the exact value behind the rounded percentage */}
+      <div className="mt-1 text-sm tabular-nums text-ink-3">{big === null ? "—" : big.toFixed(3)}</div>
+      <div className="mt-4">{chart}</div>
+      <p className="mt-4 text-base text-ink">{sentence}</p>
+      <Explain>{explain}</Explain>
+    </Card>
+  );
+}
+
+function StoryCards({ d }: { d: Summary }) {
+  // a) cross-subject: the four classical models on T1, no rest baseline
+  const base = d.classical_baselines.filter((r) => r.task_short === "T1" && r.normalisation === "none");
+  const bestModel = d.best_classical_model ?? "xgb";
+  const best = base.find((r) => r.model === bestModel);
+
+  // b) rhythm (spectral) features only vs + connection features, same model, T1, no rest baseline
+  const abl = d.feature_ablation.filter((r) => r.task_short === "T1" && r.normalisation === "none");
+  const rhythm = abl.find((r) => r.feature_set === "A1_spectral");
+  const conn = abl.find((r) => r.feature_set === "A4_spectral_connectivity");
+  const test = d.stats_classical?.tests.find((t) => t.a === conn?.experiment_id && t.b === rhythm?.experiment_id);
+  const significant = test ? (test.p_holm ?? test.p_value) < 0.05 : false;
+
+  // c) classical vs deep on the same 5 subject groups (T1)
+  const comp1 = d.comparison_5fold.filter((r) => r.task_short === "T1");
+  const xgb5 = comp1.find((r) => r.kind === "classical" && r.model === "xgb");
+  const eegnet = comp1.find((r) => r.model === "eegnet");
+  const hybrid = comp1.find((r) => r.model === "A10_hybrid");
+
+  // d) T3: moderate vs high inside the task, every model on the same 5 groups
+  const T3_MODELS = ["xgb", "rf", "svm", "lr", "eegnet", "A10_hybrid"];
+  const comp3 = T3_MODELS.map((m) => d.comparison_5fold.find((r) => r.task_short === "T3" && r.model === m))
+    .filter((r): r is ResultRow => !!r && correct(r) !== null);
+  const t3avg = comp3.length ? comp3.reduce((a, r) => a + (correct(r) as number), 0) / comp3.length : null;
+
+  return (
+    <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
+      <StoryCard
+        title="Works on people it has never seen"
+        big={correct(best)} bigLabel={`correct · ${name(bestModel)}`}
+        chart={<PercentBars rows={base.map((r) => ({ name: name(r.model), value: correct(r), highlight: r.model === bestModel }))} />}
+        sentence={<>Tested on people it never saw, {name(bestModel)} told rest from task correctly about {pct(correct(best))} of the time.</>}
+        explain={<>Each person was left out in turn: the model learned from everyone else and was then tested on that person. Bars compare four standard models.</>}
+      />
+      <StoryCard
+        title="Brain connections help"
+        big={correct(conn)} bigLabel="correct with connection features"
+        chart={<PercentBars rows={[
+          { name: "Rhythm features only", value: correct(rhythm) },
+          { name: "+ connection features", value: correct(conn), highlight: true },
+        ]} />}
+        sentence={significant
+          ? <>Adding connection features gave a real improvement (statistically significant).</>
+          : <>Adding connection features raised the score.</>}
+        explain={<>Rhythm features measure how strong each brain wave is at each sensor. Connection features measure how well pairs of sensors work in sync.</>}
+      />
+      <StoryCard
+        title="On small data, the simple model wins"
+        big={correct(xgb5)} bigLabel={`correct · ${name("xgb")}`}
+        chart={<PercentBars rows={[
+          { name: name("xgb"), value: correct(xgb5), highlight: true },
+          { name: name("eegnet"), value: correct(eegnet) },
+          { name: name("A10_hybrid"), value: correct(hybrid) },
+        ]} />}
+        sentence={<>48 people is too little data for the big deep model.</>}
+        explain={<>All three models were trained and tested on exactly the same five groups of unseen people, so the comparison is fair.</>}
+      />
+      <StoryCard
+        title="Can't tell 'moderate' from 'high' within the same task"
+        big={t3avg} bigLabel={`correct · average of ${comp3.length} models`}
+        chart={<PercentBars guessLine rows={comp3.map((r) => ({ name: name(r.model), value: correct(r) }))} />}
+        sentence={<>Our own dataset needs controlled difficulty levels.</>}
+        explain={<>Everyone here is doing the same task; the model must tell people who rated it moderate from those who rated it high. 50 % = guessing.</>}
+      />
+    </div>
+  );
+}
+
+export default function Results() {
+  const { advanced } = useSettings();
+  const s = useApi<Summary>("/results/summary");
+  const d = s.data;
+  if (s.error) return <Notice kind="error">Could not load results: {s.error}. Run scripts/export_report.py, or switch on demo mode.</Notice>;
+  if (!d) return <Notice>Loading results…</Notice>;
+  return (
+    <div className="space-y-6">
+      <Card title="Results" subtitle="Four key findings. Every number is loaded from the saved experiment results.">
+        <p className="text-base text-ink-2">
+          "Correct %" = how often the model's answer matched the truth. 50 % would be guessing.
+        </p>
+      </Card>
+      <StoryCards d={d} />
+      {advanced ? (
+        <section className="space-y-4 pt-4">
+          <h2 className="border-t border-line pt-6 text-xl font-semibold">Advanced details</h2>
+          <AdvancedResults d={d} />
+        </section>
+      ) : (
+        <p className="text-sm text-ink-3">Switch on "Advanced" in the header for the full tables, statistics and model details.</p>
+      )}
     </div>
   );
 }

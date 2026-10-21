@@ -1,4 +1,4 @@
-import { Bar, BarChart, CartesianGrid, ErrorBar, Legend, Line, LineChart, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { Bar, BarChart, CartesianGrid, Cell, ErrorBar, LabelList, Legend, Line, LineChart, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 
 const tooltipStyle = { background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 6, fontSize: 12 };
 const axis = { tick: { fill: "var(--text-3)", fontSize: 11 }, stroke: "var(--border)" };
@@ -83,6 +83,35 @@ export function Confusion({ m, classes, title }: { m: number[][]; classes: strin
           })}
         </tbody>
       </table>
+    </div>
+  );
+}
+
+/** Default-view bars: whole percentages printed on each bar, optional dashed "50 % = guessing" line.
+ *  highlight = the bar the story is about (second accent colour). */
+export function PercentBars({ rows, guessLine = false }: {
+  rows: { name: string; value: number | null | undefined; highlight?: boolean }[]; guessLine?: boolean;
+}) {
+  const data = rows.filter((r) => r.value !== null && r.value !== undefined)
+    .map((r) => ({ name: r.name, pct: Math.round((r.value as number) * 100), highlight: !!r.highlight }));
+  const height = data.length * 38 + (guessLine ? 52 : 32);
+  return (
+    <div style={{ height }}>
+      <ResponsiveContainer width="100%" height="100%">
+        <BarChart data={data} layout="vertical" margin={{ top: guessLine ? 22 : 4, right: 44, bottom: 4, left: 4 }} barCategoryGap={8}>
+          <XAxis type="number" domain={[0, 100]} ticks={[0, 50, 100]} tickFormatter={(v: number) => `${v} %`}
+            tick={{ fill: "var(--text-3)", fontSize: 12 }} stroke="var(--border)" />
+          <YAxis type="category" dataKey="name" width={150} tick={{ fill: "var(--text-2)", fontSize: 13 }} stroke="var(--border)" />
+          {guessLine && (
+            <ReferenceLine x={50} stroke="var(--text-2)" strokeDasharray="5 4" strokeWidth={1.5}
+              label={{ value: "50 % = guessing", position: "top", fill: "var(--text-2)", fontSize: 12 }} />
+          )}
+          <Bar dataKey="pct" radius={[0, 4, 4, 0]} isAnimationActive={false}>
+            {data.map((d) => <Cell key={d.name} fill={d.highlight ? "var(--series-high)" : "var(--accent)"} />)}
+            <LabelList dataKey="pct" position="right" formatter={(v: number) => `${v} %`} fill="var(--text)" fontSize={13} fontWeight={600} />
+          </Bar>
+        </BarChart>
+      </ResponsiveContainer>
     </div>
   );
 }

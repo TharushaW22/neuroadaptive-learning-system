@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Card, FlagPill, Notice, Segmented, Stat } from "../components/ui";
+import { Card, Explain, FlagPill, Notice, Segmented, Stat } from "../components/ui";
 import { CHANNELS } from "../lib/eeg";
 import type { QualityRow, QualityWindow } from "../lib/types";
 import { useApi } from "../lib/useApi";
@@ -37,6 +37,7 @@ export default function SignalQuality() {
           <Stat label="Interpolated channels" value={all.reduce((a, r) => a + r.interpolated.length, 0)}
             sub={`in ${all.filter((r) => r.interpolated.length).length} recordings`} />
         </div>
+        <Explain>How clean the headset signal is across all 96 recordings. Noisy stretches are marked, never thrown away.</Explain>
       </Card>
 
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-5">
@@ -70,6 +71,7 @@ export default function SignalQuality() {
               </tbody>
             </table>
           </div>
+          <Explain>One row per recording: how many 4-second pieces were clean, a bit noisy or bad. Click a row to see it in detail.</Explain>
         </Card>
 
         <Card className="xl:col-span-2" title={sel ? `Windows of ${sel.recording}` : "Flagged windows"}
@@ -101,6 +103,7 @@ export default function SignalQuality() {
             </>
           )}
           {win.error && <Notice kind="error">{win.error}</Notice>}
+          <Explain>Time runs left to right; each row is one sensor. Red marks a sensor that was noisy at that moment.</Explain>
         </Card>
       </div>
     </div>

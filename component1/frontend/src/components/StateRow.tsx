@@ -114,7 +114,7 @@ export default function StateRow({ outputs, advanced = false }: { outputs: Cogni
           detail={advanced ? last?.states.fatigue.formula : undefined}
         />
         <StateCard
-          title="Learning readiness (placeholder)"
+          title="Learning readiness"
           value={last?.states.readiness.value}
           sub="scale 0–1 · higher = more ready to learn"
           formula="Readiness = 0.5 × E/(1+E) + 0.5 × 1/(1+F),  E = engagement, F = fatigue"

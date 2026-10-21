@@ -1,0 +1,25 @@
+# Target: Windows 10/11, Python 3.11, CPU-only (GPU optional).
+# Install:  pip install -r requirements.txt
+#
+# Dependency notes (see README "Dependency conflicts"):
+# * mediapipe 0.10.14 is the last release line that ships the legacy `mediapipe.solutions`
+#   FaceMesh API and it is built against NumPy 1.x and protobuf < 5 -> numpy and protobuf are capped.
+#   Newer MediaPipe also works with this project (Tasks API) after running
+#   `python scripts/download_face_model.py`.
+# * mediapipe depends on opencv-contrib-python. Do NOT also install opencv-python:
+#   two OpenCV wheels in one environment overwrite each other's cv2 module.
+# * torch from PyPI on Windows is the CPU build. For CUDA, install torch separately following
+#   https://pytorch.org/get-started/locally/ BEFORE `pip install -r requirements.txt`.
+
+numpy>=1.26,<2.0
+pandas>=2.1,<2.3
+scikit-learn>=1.4,<1.6
+torch>=2.2,<2.6
+opencv-contrib-python>=4.9,<4.11
+mediapipe==0.10.14
+protobuf>=4.25.3,<5
+streamlit>=1.36,<2.0
+matplotlib>=3.8,<3.10
+PyYAML>=6.0
+joblib>=1.3
+pytest>=8.0

@@ -1,0 +1,38 @@
+# Python / tooling
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.ipynb_checkpoints/
+.streamlit/secrets.toml
+
+# Dataset - NEVER commit DAiSEE videos or labels (licence + size)
+data/raw/daisee/videos/*
+!data/raw/daisee/videos/.gitkeep
+data/raw/daisee/annotations/*
+!data/raw/daisee/annotations/.gitkeep
+
+# Derived data
+data/processed/features/*
+!data/processed/features/.gitkeep
+data/processed/sequences/*
+!data/processed/sequences/.gitkeep
+data/demo/*
+!data/demo/.gitkeep
+
+# Models and outputs (keep folders only)
+models/*
+!models/.gitkeep
+outputs/*
+!outputs/.gitkeep
+
+# Privacy: pseudonym salt and saved sessions
+outputs/.pseudonym_salt
+outputs/sessions/
+
+# Video files anywhere
+*.avi
+*.mp4
+*.mov
+*.mkv

@@ -1,0 +1,30 @@
+# NEGATIVE CONTROL for the vision context: the same GRU architecture with RE-INITIALISED weights
+# (model-parameter randomisation test, Adebayo et al., 2018). C2's normaliser is kept.
+# Part of metric reliability only; never ranked.
+context_id: vision/daisee/engagement_binary_gru__randomised
+title: "Negative control — vision GRU with random weights"
+adapter: vision_component2
+modality: vision
+weights: randomised
+randomisation_seed: 1234
+negative_control: true
+control_of: vision/daisee/engagement_binary_gru
+class_labels: [low, high]
+target_class: high
+component2:
+  root: ../component2/vision_cbu
+  models_dir: ../component2/vision_cbu/models
+  features_dir: ../component2/vision_cbu/data/processed/features
+  config: ../component2/vision_cbu/configs/default.yaml
+  model_name: auto
+expect: {label_scheme: daisee_binary, target: engagement, cell: gru, window: 20}
+representation:
+  segments: 4
+groups:
+  eyes_blink: [ear_left, ear_right, ear_mean, blink_event, blink_rate_per_min]
+  gaze: [gaze_h, gaze_v]
+  head_pose: [head_yaw, head_pitch, head_roll, face_scale, face_center_x, face_center_y]
+  mouth: [mouth_aspect_ratio]
+  brows: [brow_raise]
+conditional: {mode: auto, nominal: 0.90, coverage_range: [0.85, 0.95], max_discrete_share: 0.10}
+robustness_exclude: [blink_event]

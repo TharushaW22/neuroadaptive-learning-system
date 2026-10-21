@@ -1,0 +1,51 @@
+# VISION context (built ahead, D-V2): Component 2's PyTorch GRU on DAiSEE engagement, BINARY
+# (low = levels 0-1, high = levels 2-3; decision D-V1). Component 2 trains it in its own Python 3.11
+# environment; Component 3 only READS the files below. Run scripts/check_vision_ready.py first.
+# Cross-context comparison compares XAI METHOD SUITABILITY across prediction contexts (D-V4);
+# it never claims one modality explains workload better.
+context_id: vision/daisee/engagement_binary_gru
+title: "Vision engagement (DAiSEE, low vs high) — GRU"
+adapter: vision_component2
+modality: vision
+weights: trained          # trained | randomised (negative control)
+class_labels: [low, high] # display names for C2's classes engagement_low(<2), engagement_high(>=2)
+target_class: high        # attributions explain P(high engagement): + pushes to high, - pushes to low
+
+# Where Component 2's outputs live (READ-ONLY; paths relative to component3/).
+component2:
+  root: ../component2/vision_cbu
+  models_dir: ../component2/vision_cbu/models                     # <name>/model.pt + metadata.json (normaliser inside)
+  features_dir: ../component2/vision_cbu/data/processed/features  # per-clip *.csv.gz (all splits, with subject IDs)
+  config: ../component2/vision_cbu/configs/default.yaml           # only sequences.max_interpolate_gap is read
+  model_name: auto        # auto = newest checkpoint that passes the checks below; or a folder name
+
+# What the checkpoint must be (check_vision_ready.py and the adapter refuse anything else).
+expect:
+  label_scheme: daisee_binary
+  target: engagement
+  cell: gru
+  window: 20
+
+# Interpretable space: 15 per-frame features x 4 time segments of 5 frames (1 s each) = 60 features.
+representation:
+  segments: 4
+
+# Face-region groups (D-V2). face_scale / face_center_x / face_center_y describe where the head is and
+# how far it is from the camera, so they are grouped with head pose.
+groups:
+  eyes_blink: [ear_left, ear_right, ear_mean, blink_event, blink_rate_per_min]
+  gaze: [gaze_h, gaze_v]
+  head_pose: [head_yaw, head_pitch, head_roll, face_scale, face_center_x, face_center_y]
+  mouth: [mouth_aspect_ratio]
+  brows: [brow_raise]
+
+# Conditional SHAP: Gaussian conditional on the 60 segment means (Ledoit-Wolf, training subjects), unless
+# the held-out calibration check fails -> empirical nearest-donor conditional (decision saved in run_info.json).
+conditional:
+  mode: auto              # auto | gaussian | empirical
+  nominal: 0.90
+  coverage_range: [0.85, 0.95]
+  max_discrete_share: 0.10
+
+# Robustness noise is not added to binary features (a 0/1 blink flag plus noise is not a valid frame).
+robustness_exclude: [blink_event]

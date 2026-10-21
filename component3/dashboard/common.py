@@ -23,12 +23,15 @@ if str(C3 / "src") not in sys.path:
 
 RESULTS = C3 / "results"
 PILOT_CMD = ".venv/bin/python scripts/run_experiment.py --pilot"
+VISION_PILOT_CMD = ".venv/bin/python scripts/run_experiment.py --vision --pilot"
+VISION_WAITING = ("Waiting for Component 2's trained model — run scripts/check_vision_ready.py to see what is missing.")
 
 # ---------------------------------------------------------------- colours (one meaning each)
 EXPL_CFG = yaml.safe_load(open(C3 / "configs" / "explainers.yaml", encoding="utf-8"))["methods"]
 METHOD_COLOUR = {m: c["colour"] for m, c in EXPL_CFG.items()}
 METHOD_LABEL = {m: c["label"] for m, c in EXPL_CFG.items()}
 METHOD_PLAIN = {m: c["plain"] for m, c in EXPL_CFG.items()}
+METHOD_PLAIN_VISION = {m: c.get("plain_vision", c["plain"]) for m, c in EXPL_CFG.items()}
 RANKED = ["kernel_shap", "conditional_shap", "lime", "ig"]
 
 # attributions: blue = pushes towards LOW workload, orange = towards HIGH, grey = no effect
@@ -68,13 +71,82 @@ CRITERIA_PLAIN = {
 }
 
 
+# Vision wording of the criteria (same order and directions as CRITERIA_PLAIN)
+CRITERIA_PLAIN_VISION = {
+    "fidelity_on": (CRITERIA_PLAIN["fidelity_on"][0], "+",
+                    "We remove the video features the explanation calls most important (replacing them with the same "
+                    "features from other students' training windows) and watch the prediction. If it changes faster "
+                    "than when removing features in random order, the explanation is faithful. Higher is better; 0 "
+                    "means no better than random."),
+    "fidelity_off": (CRITERIA_PLAIN["fidelity_off"][0], "+",
+                     "Same test, but removed features are set to the average training frame (an unrealistic, "
+                     "motionless face). Higher is better."),
+    "stability": CRITERIA_PLAIN["stability"],
+    "robustness": ("Same answer when the video features are slightly noisy? (Robustness)", "+",
+                   "A little random noise (10 % of each feature's typical spread; the 0/1 blink flag is left alone) "
+                   "is added. If the prediction stays the same, the explanation should too. 1 = unchanged. Higher is better."),
+    "sparsity": CRITERIA_PLAIN["sparsity"],
+    "cost_seconds": CRITERIA_PLAIN["cost_seconds"],
+}
+
+# ---------------------------------------------------------------- modality-aware wording
+# The same page functions draw the EEG and the vision pages. The EEG strings below are the original
+# wording, so the EEG pages are unchanged; the app sets the modality before drawing a page.
+_STATE = {"modality": "eeg"}
+VOCAB = {
+    "eeg": {"screen_model": "the EEG deep model", "fill_realistic": "realistic (other people's EEG)",
+            "fill_zero": "zero (unrealistic)", "hidden": "how hidden EEG is filled in",
+            "window": "EEG window", "dep": "Band powers are more correlated", "bad": "More noisy epochs",
+            "vfe_title": "KernelSHAP vs Conditional SHAP — the effect of filling hidden EEG realistically",
+            "dep_word": "band-power correlation", "bad_word": "the share of noisy epochs",
+            "in_sample": "IN-SAMPLE — deployed model trained on all subjects; not for final results",
+            "final": "FINAL run — out-of-sample fold models", "pilot_cmd": PILOT_CMD},
+    "vision": {"screen_model": "the vision GRU model", "fill_realistic": "realistic (other students' features)",
+               "fill_zero": "average training frame (unrealistic)", "hidden": "how hidden video features are filled in",
+               "window": "video window", "dep": "Facial features move together more", "bad": "More low-quality frames",
+               "vfe_title": "KernelSHAP vs Conditional SHAP — the effect of filling hidden features realistically",
+               "dep_word": "the correlation between facial features", "bad_word": "the share of low-quality frames",
+               "in_sample": "IN-SAMPLE — Component 2's split is not verified subject-disjoint; not for final results",
+               "final": "FINAL run — Component 2's model on test-split subjects it never saw",
+               "pilot_cmd": VISION_PILOT_CMD},
+}
+
+
+def set_modality(m: str) -> None:
+    _STATE["modality"] = m if m in VOCAB else "eeg"
+
+
+def modality() -> str:
+    return _STATE["modality"]
+
+
+def V(key: str) -> str:
+    """Wording for the current modality (EEG strings = the original dashboard text)."""
+    return VOCAB[modality()][key]
+
+
+def criteria_plain() -> dict:
+    return CRITERIA_PLAIN_VISION if modality() == "vision" else CRITERIA_PLAIN
+
+
 # ---------------------------------------------------------------- data access
-def list_runs() -> list[str]:
+def run_modalities(run: str) -> set[str]:
+    out = set()
+    for p in (RESULTS / run).glob("*/run_info.json"):
+        out.add(json.loads(p.read_text(encoding="utf-8")).get("modality", "eeg"))
+    return out
+
+
+def list_runs(modality_filter: str | None = None) -> list[str]:
+    """Results runs (folders of results/ with run_info.json); optionally only those of one modality."""
     if not RESULTS.exists():
         return []
     runs = [p.parent.parent.relative_to(RESULTS).as_posix() for p in RESULTS.glob("*/*/run_info.json")
             if not p.parent.parent.name.startswith("_")]
-    return sorted(set(runs), key=lambda r: (r != "full", r != "pilot", r))
+    runs = sorted(set(runs), key=lambda r: (r not in ("full", "vision_full"), r not in ("pilot", "vision_pilot"), r))
+    if modality_filter:
+        runs = [r for r in runs if modality_filter in run_modalities(r)]
+    return runs
 
 
 @st.cache_data(show_spinner=False)
@@ -188,9 +260,9 @@ def banner(run: str, ctx: dict | None = None) -> None:
     if "PILOT" in tags:
         parts.append("PILOT run — small budget, for checking the pipeline")
     if "IN-SAMPLE" in tags:
-        parts.append("IN-SAMPLE — deployed model trained on all subjects; not for final results")
+        parts.append(next((c["label"] for c in ctxs if c.get("label")), V("in_sample")))
     if not parts:
-        parts.append("FINAL run — out-of-sample fold models")
+        parts.append(V("final"))
     st.markdown(f'<div class="banner {"amber" if amber else "neutral"}">Run type: {" + ".join(tags)} · '
                 f'{" · ".join(parts)}</div>', unsafe_allow_html=True)
 
@@ -225,5 +297,10 @@ def legend_row(methods: list[str]) -> None:
 
 
 def no_results(what: str = "results") -> None:
-    st.info(f"No {what} yet — run the pilot with:\n\n`{PILOT_CMD}`\n\n(from the component3/ folder), "
+    st.info(f"No {what} yet — run the pilot with:\n\n`{V('pilot_cmd')}`\n\n(from the component3/ folder), "
             "then reload this page.")
+
+
+def vision_waiting() -> None:
+    """Friendly empty state of every vision page until Component 2's model has been explained."""
+    st.info(VISION_WAITING)

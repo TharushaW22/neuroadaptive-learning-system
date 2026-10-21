@@ -1,7 +1,7 @@
 # Progress — Component 3
 
 Updated continuously so work can resume after an interruption. Machine: Apple M1 (4 performance
-+ 4 efficiency cores), 8.6 GB RAM, Python 3.13.7, CPU only. Date: 2026-10-20.
++ 4 efficiency cores), 8.6 GB RAM, Python 3.13.7, CPU only. Date: 2026-10-20 (vision build-ahead: 2026-10-21).
 
 Git-status rule: after every step `git status --porcelain` (repo root) listed only `component3/`
 paths, and `find component1 -newer component3/docs/PLAN_DRAFT.md` returned nothing.
@@ -25,7 +25,53 @@ paths, and `find component1 -newer component3/docs/PLAN_DRAFT.md` returned nothi
 | 12 Ranking | done | `test_step12_13_ranking_export.py` | reliability-based criteria; TOPSIS; SMAA × 3 MC seeds |
 | 13 C4 export | done | same | JSON validates against schema 1.0 |
 | 14 Dashboard | done | `test_step14_dashboard.py` | 11 pages; AppTest renders each page from the pilot results |
-| 15 C2 adapters | waiting for Component 2 | – | interface ready (`adapters/base.py`) |
+| 15 C2 adapters | Phase 1 analysis done (2026-10-21, `docs/C2_ANALYSIS.md`); decisions D-V1–D-V5 taken | – | DAiSEE is not on this machine, no trained C2 model exists, and there is no fusion model or paired EEG+video data |
+| 15 Vision (build ahead, D-V2) | **built and tested on toy fixtures (2026-10-21); real run waits for Component 2** | `test_step15_vision_c2_copies.py`, `test_step15_vision_adapter.py`, `test_step15_vision_readiness_run.py`, `test_step15_dashboard_vision.py` | see "Step 15 — vision context" below. `check_vision_ready.py` currently: NOT READY (no trained model, no features) |
+
+## Step 15 — vision context (built ahead, 2026-10-21)
+
+Decisions: D-V1 (C2 trains a binary GRU in its own env), D-V2 (build ahead), D-V3 (no multimodal),
+D-V4 (compare method suitability per prediction context, never modalities), D-V5 (questions for C2). See PLAN.md §3b.
+
+Built (all inside component3/; component2/ only read):
+
+| Item | Files |
+|---|---|
+| B1 adapter | `models/vision_c2.py` (cited copies of C2's GRU, normaliser, window builder; checkpoint checks), `data/vision_data.py` (C2 features → C2's windows, cache in `data/processed/vision/`), `representation/vision_space.py` (15 × 4 segments, groups), `replacement/vision_strategies.py` (zero = training mean, donors, Gaussian conditional + suitability check → empirical fallback), `adapters/vision_component2.py`, `configs/contexts/vision_engagement_gru.yaml` |
+| B2 screening / control / in-sample | `adapters/vision_baseline.py` + `contexts/vision_engagement_baseline.yaml` (sklearn baseline, IG screened out), `contexts/vision_engagement_gru_randomised.yaml`, `data/vision_data.split_check` (out-of-sample only if subject-disjoint) |
+| B3 readiness | `run/vision_readiness.py`, `scripts/check_vision_ready.py` (read-only; exit 0 only when ready) |
+| B4 run | `scripts/run_experiment.py --vision [--pilot]`, `configs/run_vision.yaml` (results/vision_pilot, vision_full); refuses until ready |
+| B5 comparison + C4 | `compare/cross_context.py`, `scripts/compare_contexts.py`; export adds optional `modalities` + `vision_windows` (schema still 1.0; EEG `windows` unchanged) |
+| B6 dashboard | sidebar sections Overview / EEG / Computer Vision / Multimodal / Cross-context comparison / Output for Component 4 / Glossary; `views_vision.py` (schematic face, time-segment and region charts); EEG pages unchanged (wording via `common.V`) |
+| B7 tests | 4 new test files (58 tests); toy fixtures only in `tests/` (`fixtures_vision.py`, temporary folders `tests/_tmp*`, deleted after use) |
+| B8 docs | `VISION_RUNBOOK.md`, this file, PLAN, CODE_GUIDE, ai_use_log, questions_for_team, README, CLAUDE.md |
+
+Checks done:
+* The C3 copies of C2's `TemporalClassifier`, `Normalizer`, `forward_fill_within_video` and
+  `build_sequences` give identical outputs to C2's original files (loaded read-only, no bytecode
+  written in component2/).
+* On toy fixtures the following hold: SHAP efficiency error < 1e-6; IG completeness < 5 %; conditional
+  shifts hit the sampled segment means exactly; every replacement returns f(x) when all features are
+  present; donors come only from train-split subjects; a subject overlap switches every output to
+  IN-SAMPLE; the full pipeline (explain → analysis → export) runs end to end on a toy C2-shaped folder;
+  and every vision dashboard page renders from that toy run (in tests only).
+* EEG unchanged: EEG configs, results, fold-model code and behaviour are untouched. The EEG export
+  rebuilt in memory from `results/pilot` still validates with the same `windows` format (the file on
+  disk was not rewritten).
+* Full suite: **134 passed** (2 min 24 s).
+
+`scripts/check_vision_ready.py` output today (exit code 1):
+```
+ ✓ c2_project        pass     .../component2/vision_cbu
+ ✗ trained_model     fail     no usable checkpoint (no model folders in .../models) ...  [Component 2 owner]
+ · normaliser        skipped  needs the trained model
+ · model_loads       skipped  needs the trained model
+ ✗ features          fail     no per-clip feature files (*.csv.gz) in .../data/processed/features ...  [Component 2 owner]
+ · splits_labels / subject_ids / subject_disjoint / class_balance / model_vs_data   skipped (need the features)
+NOT READY: 9 required item(s) missing or blocked. Who must act: Component 2 owner.
+```
+Not measured yet (needs real data): vision pilot duration, Gaussian-vs-empirical decision, class balance,
+whether DAiSEE's official split is subject-disjoint.
 
 ## Measured costs (budget study, `results/pilot/budget_study.json`)
 
@@ -110,6 +156,9 @@ with 4 workers and nothing else running (2 windows per subject: ≈ 6 h). Resuma
 
 ```bash
 cd component3
+# vision: when Component 2 has delivered (docs/VISION_RUNBOOK.md)
+.venv/bin/python scripts/check_vision_ready.py
+.venv/bin/python scripts/run_experiment.py --vision --pilot
 # D1 fold models (≈ 40–45 min, all 5 folds; or one fold at a time with --folds 0 ... --folds 4)
 .venv/bin/python scripts/train_fold_models.py --context eeg_T1_A8
 # then the full experiment (resumable; re-run the same command after an interruption)

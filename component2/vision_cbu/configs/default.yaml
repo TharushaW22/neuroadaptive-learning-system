@@ -1,0 +1,126 @@
+# Vision-Based Cognitive Behaviour Understanding - default configuration.
+# All relative paths are resolved against the project root.
+# Override with:  --config configs/my_experiment.yaml   (deep-merged over this file)
+
+project:
+  name: "Vision-Based Cognitive Behaviour Understanding for Intelligent Learning Systems"
+  seed: 42
+
+paths:
+  daisee_root: data/raw/daisee
+  daisee_videos: data/raw/daisee/videos
+  daisee_annotations: data/raw/daisee/annotations
+  features_dir: data/processed/features
+  sequences_dir: data/processed/sequences
+  demo_dir: data/demo
+  models_dir: models
+  outputs_dir: outputs
+  audit_dir: outputs/audit
+  evaluation_dir: outputs/evaluation
+  sessions_dir: outputs/sessions
+  logs_dir: outputs/logs
+  # Only needed when the installed MediaPipe has no legacy "solutions" API.
+  # Obtain with:  python scripts/download_face_model.py   (explicit, user-initiated)
+  face_landmarker_model: models/face_landmarker.task
+
+camera:
+  index: 0
+  width: 640
+  height: 480
+  fps: 30
+  sample_every_n_frames: 2      # process 1 of every N captured frames
+  backend: auto                 # auto | dshow | msmf | any
+
+vision:
+  landmark_backend: auto        # auto | mediapipe_solutions | mediapipe_tasks | opencv_haar
+  max_num_faces: 2              # >1 so that multiple faces can be detected and flagged
+  min_detection_confidence: 0.5
+  min_tracking_confidence: 0.5
+  ear_blink_threshold: 0.21     # EAR below this = eye closed (needs per-person calibration)
+  blink_min_consecutive_frames: 2
+  blink_max_consecutive_frames: 15   # longer closures are not counted as blinks
+  blink_rate_window_s: 60
+  min_brightness: 40
+  max_brightness: 220
+  min_face_scale: 0.08          # face height / image height
+
+extraction:
+  target_fps: 5                 # sampling rate for dataset videos
+  max_frames_per_video: null    # null = whole clip
+  cache: true
+  video_extensions: [".avi", ".mp4", ".mov", ".mkv"]
+
+sequences:
+  window_size: 20               # timesteps per window (20 @ 5 fps = 4 s)
+  stride: 10
+  min_valid_ratio: 0.6          # min fraction of quality-OK timesteps for a window to be kept
+  max_interpolate_gap: 3        # forward-fill at most this many consecutive missing samples
+
+preprocessing:
+  normalization: standard       # standard | minmax | none  (fit on TRAINING data only)
+
+labels:
+  target: engagement            # engagement | boredom | confusion | frustration
+  scheme: daisee_original       # daisee_original | daisee_binary | operational
+  binary_threshold: 2           # daisee_binary: level >= threshold -> "high"
+  # Operational categories (FOCUSED / REDUCED_ATTENTION / DISTRACTED) are DISABLED
+  # until a documented protocol exists. See docs/labeling_protocol.md.
+  operational_mapping: null     # e.g. {0: DISTRACTED, 1: REDUCED_ATTENTION, ...} - only with justification
+  operational_mapping_document: null   # path to the written justification (must exist)
+  video_label_policy: broadcast_video_label   # documented in docs/methodology.md
+
+split:
+  use_official_splits: true
+  validation_fraction: 0.15     # only used if no official validation split exists
+  participant_level: true
+
+baseline:
+  type: logistic_regression     # logistic_regression | random_forest
+  class_weight: balanced
+  max_iter: 2000
+  n_estimators: 300
+
+temporal:
+  cell: gru                     # gru | lstm
+  hidden_size: 64
+  num_layers: 1
+  dropout: 0.2
+  bidirectional: false
+  batch_size: 32
+  learning_rate: 0.001
+  weight_decay: 0.0001
+  epochs: 30
+  patience: 5
+  class_weight: balanced
+  device: auto                  # auto | cpu | cuda
+
+evaluation:
+  latency_repeats: 50
+  ablation: true
+
+dashboard:
+  min_quality_for_prediction: 0.6   # below this the state is UNKNOWN
+  allow_demo_models: false          # demo models are never used for live inference by default
+
+# EXPERIMENTAL / HEURISTIC scores in [0, 1]. NOT trained, NOT validated.
+# The trained model predicts the DAiSEE engagement level (0-3) only; these scores are fixed
+# weighted sums of that level and window-level visual proxies. Formulas: docs/labeling_protocol.md section 6.
+interpretation:
+  enabled: true
+  version: "heuristic_v1"
+  attention_weights: {engagement: 0.55, face_vis: 0.20, pose_stable: 0.15, ear_open: 0.10}
+  fatigue_weights: {low_engagement: 0.40, blink_high: 0.30, eyes_closed: 0.20, pose_unstable: 0.10}
+  readiness_weights: {engagement: 0.50, attention: 0.30, low_fatigue: 0.20}
+  proxies:                      # normalisation of raw features to [0, 1] (clipped)
+    ear_closed: 0.15            # mean EAR at/below this -> ear_open = 0
+    ear_open: 0.30              # mean EAR at/above this -> ear_open = 1
+    blink_rate_normal: 17.0     # blinks/min at/below this -> blink_high = 0
+    blink_rate_high: 35.0       # blinks/min at/above this -> blink_high = 1
+    pose_motion_max_deg: 15.0   # mean std of yaw/pitch/roll at/above this -> pose_stable = 0
+    min_valid_frames: 0.6       # fraction of quality-OK frames needed, else quality_state = UNKNOWN
+
+privacy:
+  store_raw_video: false            # there is no code path that writes raw video
+  enable_session_logging: false
+  require_consent: true
+  pseudonym_salt_env: VCBU_PSEUDONYM_SALT

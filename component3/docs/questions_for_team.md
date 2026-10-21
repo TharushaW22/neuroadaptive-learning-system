@@ -21,18 +21,28 @@ Status of each answer is updated here; decisions taken meanwhile are in `PLAN.md
 
 ## Component 2 (computer vision)
 
-1. Framework and model files?
-2. Input representation (frames, landmarks, action units, embeddings) and shape?
-3. Classes — the same cognitive states as C1?
-4. Time windows — aligned with C1's 4-s / 2-s grid?
-5. Dataset — public or own; are subject IDs available?
-6. Split method (subject-wise)?
-7. Fusion type (early / late / intermediate); differentiable end-to-end?
-8. Calibrated probabilities?
+Answered by reading C2's code (`docs/C2_ANALYSIS.md`): the model is PyTorch (GRU) plus a scikit-learn
+baseline; the input is 15 per-frame facial features × 20 frames (4 s at 5 fps, stride 2 s); the data is
+DAiSEE with subject IDs from the folder layout and the official split; there is no fusion model; there
+is no probability calibration. Decisions D-V1–D-V5 are in PLAN.md §3b. Open questions (D-V5):
 
-C3 is ready for a vision adapter: implement `xaicomp.adapters.base.ModelAdapter` (instances,
-interpretable space with groups, value function for coalitions, optional torch module). No C2
-data or models are faked meanwhile (D8).
+1. **Data and model delivery.** When will DAiSEE be obtained, the features extracted and the GRU trained
+   in C2's Python 3.11 environment? Component 3 needs `models/<name>/model.pt + metadata.json` and
+   `data/processed/features/*.csv.gz` for **all** splits (docs/VISION_RUNBOOK.md, Part A).
+2. **Binary labels.** Please train with `labels.scheme: daisee_binary`, `binary_threshold: 2`
+   (low = 0–1, high = 2–3, decision D-V1). Is that acceptable for your own evaluation as well?
+3. **Subject-disjoint split.** Does your audit confirm that DAiSEE's official train/validation/test split
+   has no participant overlap? Otherwise every vision explanation is labelled IN-SAMPLE.
+4. **Subject IDs.** Will the videos keep the official `<split>/<subjectID>/<clipID>/` layout, so that the
+   participant IDs are real (not `unknown`)?
+5. **Settings.** Will you keep the defaults Component 3 checks: window 20, stride 10, 5 fps, schema 1.0.0,
+   GRU? If you change them, please tell us. The readiness check would refuse a mismatch.
+6. **Class balance.** DAiSEE engagement is skewed towards high levels. Will you report the binary class
+   counts per split, and use class weighting (your default `class_weight: balanced`)?
+7. **Library versions.** Which torch/numpy versions will train the model? Component 3 loads the weights in
+   Python 3.13 / torch 2.x with `weights_only=True`; the readiness check reports both sides.
+8. **Calibration.** C2 has no temperature scaling. Is an uncalibrated P(high) acceptable for Component 4's
+   trust indicator, or will you add calibration?
 
 ## Component 4 (adaptive policy agent)
 

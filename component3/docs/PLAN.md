@@ -1,7 +1,8 @@
 # Component 3 — Comparative XAI evaluation: final plan
 
 Project J26-DS-333 (SLIIT IT4010), Component 3. This is the approved plan (`PLAN_DRAFT.md`) with the
-student's decisions D1–D9 folded in and the deviations found while building it. The status of each
+student's decisions D1–D9 and the vision decisions D-V1–D-V5 folded in, plus the deviations found while
+building it. The status of each
 step is tracked in `PROGRESS.md`.
 
 ## 1. Research question
@@ -36,6 +37,44 @@ on one person's choice of weights? The answer is delivered to Component 4 per pr
 | D8 | ModelAdapter interface + config ready for vision/fusion adapters; no fake Component 2 models or data. |
 | D9 | Streamlit dashboard for non-specialists: plain language, glossary, Okabe–Ito colours, blue↔orange diverging attributions, status colours only for status, run-type banner, research-order navigation. |
 
+## 3b. Vision context decisions (D-V1–D-V5, 2026-10-21; analysis in `C2_ANALYSIS.md`)
+
+| | Decision |
+|---|---|
+| D-V1 | DAiSEE is obtained and the GRU is trained by the **Component 2 owner** in C2's own Python 3.11 environment, with **binary** engagement (low = levels 0–1, high = 2–3; C2 scheme `daisee_binary`). Component 3 neither obtains data nor trains C2 models. |
+| D-V2 | **Build ahead:** everything for the vision context is built now, so it runs with one command when C2's trained GRU, normaliser and features exist (`docs/VISION_RUNBOOK.md`). |
+| D-V3 | **Multimodal dropped.** No fusion model is built or explained: there is no genuinely paired EEG + video data (STEW and DAiSEE are different people at different times). The dashboard's Multimodal page explains why and what would be needed. |
+| D-V4 | The cross-context comparison compares **XAI method suitability across two prediction contexts** (EEG workload; vision engagement). It never claims that one modality explains workload better. |
+| D-V5 | Open questions for C2 are in `questions_for_team.md`. |
+
+Vision design (built, tested on toy fixtures only):
+
+* **Model and data (read-only):** C2's checkpoint `models/<name>/{model.pt, metadata.json}`. The
+  normaliser is stored in the metadata. Windows are rebuilt from C2's per-clip feature files exactly as
+  C2 builds them: forward-fill ≤ 3 frames, 20-frame windows, stride 10, ≥ 60 % quality-OK frames,
+  training-split normaliser. C2's GRU, normaliser and window code are minimal copies in
+  `models/vision_c2.py`, with each source cited. A test checks they are identical to the originals.
+* **Interpretable space:** 15 features × 4 time segments of 5 frames = 60 features. Group levels:
+  feature, segment, face-region group (eyes/blink, gaze, head pose & position, mouth, brows), group ×
+  segment.
+* **"Absent":** off-manifold means the training mean (0 after C2's standardisation; this is also IG's
+  zero baseline). On-manifold means the frames of donor windows from train-split subjects.
+  Conditional SHAP uses a Gaussian conditional on the 60 segment means (Ledoit-Wolf, train subjects),
+  with the donor frames shifted to the drawn means. The **empirical nearest-donor** conditional is used
+  instead if a held-out calibration check fails: 90 % interval coverage outside [0.85, 0.95], or more
+  than 10 % discrete dimensions (blink_event is 0/1). The check is computed on C2's data at run time
+  and saved in `run_info.json`.
+* **Same four explainers + IG zero baseline, metrics, reliability, statistics, ranking and export as EEG.**
+  Robustness noise is σ = 0.1 training SD and is not added to the binary blink flag.
+* **In-sample logic:** test-split windows count as out-of-sample **only if** C2's split is verified
+  subject-disjoint (no test participant in train/validation, no `unknown` IDs). Otherwise every vision
+  output is labelled IN-SAMPLE.
+* **Screening:** the GRU passes for all four methods. C2's scikit-learn baseline is a screening-only
+  candidate, and IG is screened out for it (not differentiable).
+* **Negative control:** the same GRU architecture with re-initialised weights.
+* **Gate:** `scripts/check_vision_ready.py` (read-only). `run_experiment.py --vision` refuses to start
+  until it passes.
+
 ## 4. Deviations found during the build (documented, config-switchable)
 
 1. **84 features instead of 70 — a sixth "slow" band (< 1 Hz).** After C1's 0.5–45 Hz FIR, about
@@ -66,6 +105,10 @@ STEW ─(C1 library)→ cleaned continuous recordings + epochs            script
      → statistics at subject level: Friedman, Wilcoxon-Holm, rank-biserial, cluster bootstrap, baycomp ROPE
      → ranking: reliability-based criteria → TOPSIS → Monte-Carlo SMAA (several seeds)
      → Component 4 export (JSON schema + functions) → Streamlit dashboard (reads results/ only)
+
+Vision (same pipeline from "instance manifest" on):
+C2 features + checkpoint (read-only) → readiness gate → 20-frame windows (C2's own rules) → 15 features
+     × 4 time segments → … → vision entry in the C4 export → cross-context comparison (method suitability)
 ```
 
 ## 6. Steps
@@ -87,7 +130,7 @@ STEW ─(C1 library)→ cleaned continuous recordings + epochs            script
 | 12 | TOPSIS + SMAA | P(rank 1) per method, stable across MC seeds |
 | 13 | C4 export | JSON validates |
 | 14 | dashboard | reads results/ only; D9 |
-| 15 | C2 adapters | waits for Component 2 |
+| 15 | Vision context (built ahead, D-V2) | adapter, screening, readiness gate, run command, cross-context module, C4 entry, dashboard section and tests done; **real run waits for Component 2's trained model** (VISION_RUNBOOK.md) |
 
 ## 7. Known limitations
 
@@ -97,3 +140,7 @@ STEW ─(C1 library)→ cleaned continuous recordings + epochs            script
   reliability analysis decides whether each enters the ranking.
 * 48 subjects; T1 is rest-vs-task, so "workload" is confounded with task engagement (C1 docs).
 * Until the fold models are trained, all results are IN-SAMPLE.
+* Vision: clip-level DAiSEE labels are copied to every window (weak window labels). The interpretable
+  features are geometric face measurements, not facial action units. EEG and vision results are
+  comparable only as method suitability per prediction context (D-V4). There are no multimodal
+  results (D-V3).

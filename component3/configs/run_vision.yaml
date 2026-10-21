@@ -1,0 +1,44 @@
+# Compute budgets for the VISION context (D6 analogue). Same explainer budgets as the EEG run
+# (configs/run.yaml), so both prediction contexts are compared at equal effort.
+# Run: .venv/bin/python scripts/run_experiment.py --vision --pilot   (refuses until check_vision_ready passes)
+contexts: [vision_engagement_gru, vision_engagement_gru_randomised]
+screening_only_contexts: [vision_engagement_baseline]
+max_seconds_per_instance: 600
+run_names: {pilot: vision_pilot, full: vision_full}
+
+full:
+  subjects: all                 # every subject of C2's TEST split
+  instances_per_subject: 4      # 2 low + 2 high windows where the subject has both
+  seeds: [0, 1, 2]
+  selection_seed: 2026
+  n_noise: 1
+  torch_threads: 4
+  workers: 4
+  degradation_instances: 24
+  control:                      # C2 has one split (fold 0): the control takes this many test subjects
+    subjects_per_fold: 10
+    instances_per_subject: 2
+  budgets:
+    kernel_shap: {nsamples: 1000, k_donors: 4}
+    conditional_shap: {nsamples: 1000, k_donors: 4}
+    lime: {num_samples: 1000, k_donors: 4}
+    ig: {n_steps: 32, k_donors: 4}
+    ig_zero: {n_steps: 32}
+    fidelity: {k_donors: 4}
+
+pilot:
+  subjects: {random: 6}         # 6 test subjects drawn with selection_seed (IDs are unknown until C2 delivers)
+  instances_per_subject: 2
+  seeds: [0, 1]
+  n_noise: 1
+  degradation_instances: 4
+  control:
+    subjects_per_fold: 3
+    instances_per_subject: 1
+  budgets:
+    kernel_shap: {nsamples: 300, k_donors: 2}
+    conditional_shap: {nsamples: 300, k_donors: 2}
+    lime: {num_samples: 300, k_donors: 2}
+    ig: {n_steps: 16, k_donors: 2}
+    ig_zero: {n_steps: 16}
+    fidelity: {k_donors: 2}

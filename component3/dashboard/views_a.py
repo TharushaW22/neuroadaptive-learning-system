@@ -10,8 +10,8 @@ import pandas as pd
 import plotly.graph_objects as go
 import streamlit as st
 
-from common import (BAND_PLAIN, CRITERIA_PLAIN, DIVERGING, HEAD_XY, METHOD_COLOUR, METHOD_PLAIN, MUTED, RANKED,
-                    analysis, banner, explanation_values, fmt, howto, label, legend_row, meaning, method_chip,
+from common import (BAND_PLAIN, DIVERGING, HEAD_XY, METHOD_COLOUR, METHOD_PLAIN, MUTED, RANKED, V, analysis,
+                    banner, criteria_plain, explanation_values, fmt, howto, label, legend_row, meaning, method_chip,
                     no_results, pct, plotly_layout, primary_contexts, read_json, read_parquet, status_badge, summary,
                     table)
 
@@ -139,7 +139,7 @@ def page_screening(run: str):
     main = sc[~sc["screening_only"]].drop_duplicates("method")
     ok = main[main["verdict"] == "applicable"]["label"].tolist()
     bad = main[main["verdict"] == "excluded"]["label"].tolist()
-    summary(f"Before comparing, every candidate method is checked against 8 requirements. For the EEG deep model, "
+    summary(f"Before comparing, every candidate method is checked against 8 requirements. For {V('screen_model')}, "
             f"<b>{len(ok)}</b> methods can be used ({', '.join(ok)}); <b>{', '.join(bad) or 'none'}</b> "
             "cannot, for the reasons listed below.")
     for cid, g in sc.groupby("context_id", sort=False):
@@ -334,7 +334,7 @@ def page_metrics(run: str):
             + (f"On the most important one — does the explanation match what the model really does? — "
                f"<b>{label(best['method'])}</b> scores highest ({fmt(best['mean'])} above random order)." if best is not None else ""))
     legend_row(RANKED)
-    for crit, (title, direction, text) in CRITERIA_PLAIN.items():
+    for crit, (title, direction, text) in criteria_plain().items():
         if crit not in stats:
             continue
         st.markdown(f"#### {title}")
@@ -350,7 +350,7 @@ def page_metrics(run: str):
 
     st.markdown("#### Deletion curves: how fast does the prediction fall when important parts are removed?")
     mode = st.radio("Removal type", ["on_manifold", "off_manifold"], horizontal=True,
-                    format_func=lambda m: "realistic (other people's EEG)" if m == "on_manifold" else "zero (unrealistic)")
+                    format_func=lambda m: V("fill_realistic") if m == "on_manifold" else V("fill_zero"))
     cur = mean_curves(ctx["_dir"], mode, ctx["seeds"][0])
     if cur:
         fig = go.Figure()

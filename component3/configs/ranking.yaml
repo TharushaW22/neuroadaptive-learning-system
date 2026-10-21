@@ -1,0 +1,23 @@
+# TOPSIS + SMAA ranking (Step 12). No weight is tuned to favour a method: weights are drawn
+# uniformly from the simplex (Dirichlet with all concentrations = 1) and then multiplied by the
+# reliability factor of each criterion.
+smaa:
+  n_draws: 10000
+  seeds: [101, 202, 303]      # repeat with several Monte-Carlo seeds to show P(rank 1) is stable
+  dirichlet_alpha: 1.0
+  bootstrap_values: true      # criterion values drawn from a subject cluster bootstrap in every draw
+
+reliability_rules:
+  min_icc_keep: 0.5           # ICC below this -> criterion dropped
+  full_weight_icc: 0.75       # ICC in [0.5, 0.75) -> weight multiplied by ICC; >= 0.75 -> full weight
+  require_monotonic: true     # criterion must fall monotonically under controlled degradation
+  monotonic_min_abs_rho: 0.8  # |Spearman(degradation level, metric)| needed to count as monotonic
+  redundancy_rho: 0.9         # |Spearman| between two criteria above this -> merged (averaged ranks)
+  must_fail_control: [fidelity_on, fidelity_off]   # these must collapse on the randomised-weights model
+  control_max_ratio: 0.5      # "collapse" = mean fidelity on the random model < 0.5 x on the trained model
+  sanity_max_similarity: 0.5  # a METHOD passes the randomisation sanity check if mean |Spearman(trained, random)| < 0.5
+
+# Practical equivalence of the top two methods: Bayesian signed-rank on per-subject TOPSIS closeness.
+closeness_rope: 0.05
+
+ranked_methods: [kernel_shap, conditional_shap, lime, ig]

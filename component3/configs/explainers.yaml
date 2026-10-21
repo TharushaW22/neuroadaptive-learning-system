@@ -1,0 +1,50 @@
+# The four explainers compared on the SAME 84 channel x band features (14 channels x 6 bands).
+# Budgets (n samples, K donors, steps) live in run.yaml so the pilot can shrink them.
+# Display colours: Okabe-Ito (colour-blind safe); each method keeps ONE colour everywhere.
+# Validated with the dataviz palette checker (all pairs: CVD dE >= 8.5, normal-vision dE >= 20);
+# orange / pink have < 3:1 contrast on white, so charts always label methods by NAME as well.
+
+methods:
+  kernel_shap:
+    label: KernelSHAP
+    plain: "KernelSHAP (fills hidden parts with other people's EEG)"
+    family: shapley
+    value_function: marginal          # absent component <- donor component (training subjects)
+    colour: "#0072B2"                 # blue
+    ranked: true
+  conditional_shap:
+    label: Conditional SHAP
+    plain: "Conditional SHAP (fills hidden parts with realistic, matching EEG)"
+    family: shapley
+    value_function: conditional       # absent component <- donor waveform rescaled to a conditional draw
+    mode: gaussian                    # gaussian | empirical  (D2; empirical = nearest donors on present features)
+    shrinkage: ledoit_wolf
+    colour: "#E69F00"                 # orange
+    ranked: true
+  lime:
+    label: LIME
+    plain: "LIME (fits a simple straight-line model around this window)"
+    family: surrogate
+    value_function: marginal
+    kernel_width: 25.0                # on cosine distance x 100, as in LIME's text explainer
+    colour: "#56B4E9"                 # sky blue (Okabe-Ito green is avoided: green is reserved for "pass" status)
+    ranked: true
+  ig:
+    label: Integrated Gradients
+    plain: "Integrated Gradients (follows the model's gradients from a reference)"
+    family: gradient
+    baseline: donor                   # MAIN variant (D3): stochastic donor baselines, expected-gradients style
+    colour: "#CC79A7"                 # pink
+    ranked: true
+  ig_zero:
+    label: "Integrated Gradients (zero baseline)"
+    plain: "Integrated Gradients with an all-zero reference (reported separately)"
+    family: gradient
+    baseline: zero
+    deterministic: true               # its stability is trivially 1 -> never rewarded, never ranked (D3)
+    colour: "#999999"
+    ranked: false
+
+# Methods considered but excluded by the applicability screening (reasons are produced by
+# xaicomp.screening.applicability, not hard-coded results).
+excluded_candidates: [dice, anchors]

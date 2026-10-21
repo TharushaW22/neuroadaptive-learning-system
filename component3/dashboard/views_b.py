@@ -9,8 +9,8 @@ import pandas as pd
 import plotly.graph_objects as go
 import streamlit as st
 
-from common import (CRITERIA_PLAIN, METHOD_COLOUR, MUTED, RANKED, RESULTS, SEQUENTIAL, analysis, banner,
-                    control_for, fmt, howto, label, legend_row, meaning, method_chip, no_results, pct, plotly_layout,
+from common import (METHOD_COLOUR, MUTED, RANKED, RESULTS, SEQUENTIAL, V, analysis, banner, control_for,
+                    criteria_plain, fmt, howto, label, legend_row, meaning, method_chip, no_results, pct, plotly_layout,
                     status_badge, summary, table)
 from views_a import current_ctx, words_for_corr
 
@@ -144,7 +144,7 @@ def page_disagreement(run: str):
     summary(f"Different methods often name different features. On average the four main methods agree "
             f"<b>{words_for_corr(r_main)}</b> (rank correlation {fmt(r_main)}). Part of this is random noise inside "
             "each method; the corrected values below remove that part. "
-            + (f"KernelSHAP and Conditional SHAP differ only in how hidden EEG is filled in; their disagreement is "
+            + (f"KernelSHAP and Conditional SHAP differ only in {V('hidden')}; their disagreement is "
                f"{fmt(vfe.get('mean_disagreement'))} versus {fmt(vfe.get('mean_disagreement_other_pairs'))} for other pairs."
                if vfe.get("available") else ""))
 
@@ -179,7 +179,7 @@ def page_disagreement(run: str):
     coefs = [c for c in mm.get("coefficients", []) if c["term"].startswith("z_")]
     if coefs:
         plain = {"z_confidence": "Model is more confident", "z_lime_r2": "Model is locally more linear (LIME R²)",
-                 "z_local_bp_corr": "Band powers are more correlated", "z_frac_bad": "More noisy epochs"}
+                 "z_local_bp_corr": V("dep"), "z_frac_bad": V("bad")}
         fig = go.Figure()
         for c in coefs:
             fig.add_scatter(x=[c["coef"]], y=[plain.get(c["term"], c["term"])], mode="markers",
@@ -190,7 +190,7 @@ def page_disagreement(run: str):
         fig.add_vline(x=0, line=dict(color="#9AA5B1"))
         fig.update_layout(xaxis_title="Change in disagreement per 1 standard deviation (← less, more →)")
         st.plotly_chart(plotly_layout(fig, 300), use_container_width=True)
-        howto("Each row is one property of the EEG window. A dot right of the line means windows with more of that "
+        howto(f"Each row is one property of the {V('window')}. A dot right of the line means windows with more of that "
               "property have more disagreement; the line through the dot is the 95% confidence interval. Lines "
               "crossing zero = no clear effect.")
         st.caption(f"Linear mixed model, {mm.get('n')} window-pairs from {mm.get('n_subjects')} subjects, "
@@ -198,10 +198,10 @@ def page_disagreement(run: str):
     else:
         st.info("The mixed model could not be fitted for this run (" + str(mm.get("error", "too little data")) + ").")
     if vfe.get("available"):
-        with st.expander("KernelSHAP vs Conditional SHAP — the effect of filling hidden EEG realistically"):
+        with st.expander(V("vfe_title")):
             st.write(f"Mean disagreement {fmt(vfe['mean_disagreement'])} (other pairs {fmt(vfe['mean_disagreement_other_pairs'])}). "
-                     f"Correlation of this disagreement with band-power correlation: {fmt(vfe['spearman_with_local_bp_corr'])}; "
-                     f"with the share of noisy epochs: {fmt(vfe['spearman_with_frac_bad'])}.")
+                     f"Correlation of this disagreement with {V('dep_word')}: {fmt(vfe['spearman_with_local_bp_corr'])}; "
+                     f"with {V('bad_word')}: {fmt(vfe['spearman_with_frac_bad'])}.")
 
 
 # =========================================================================== 8 Statistics
@@ -221,7 +221,7 @@ def page_statistics(run: str):
     summary(f"All tests treat each <b>subject</b> as one unit ({n} subjects), because windows from the same person "
             f"are not independent. The methods differ clearly (p below 0.05) on <b>{len(sig)}</b> of {len(stats)} "
             f"criteria{': ' + ', '.join(crit_name(c) for c in sig) if sig else ''}.")
-    crit = st.selectbox("Criterion", list(stats), format_func=lambda c: CRITERIA_PLAIN.get(c, (c,))[0])
+    crit = st.selectbox("Criterion", list(stats), format_func=lambda c: criteria_plain().get(c, (c,))[0])
     s = stats[crit]
     fr = s["friedman"]
     st.write(f"**Do the methods differ at all?** Friedman test: p = {fmt(fr['p_value'], 2)}; effect size "
@@ -410,10 +410,52 @@ GLOSSARY = {
 }
 
 
+GLOSSARY_VISION = {
+    "Prediction context": "One model making one kind of prediction from one kind of data: here EEG workload "
+                          "(Component 1) and vision engagement (Component 2). Methods are compared within each context.",
+    "Engagement (DAiSEE)": "How engaged a student watching an online lecture looks, rated 0–3 by observers in the DAiSEE "
+                           "dataset. Used here as two classes: low (0–1) and high (2–3).",
+    "Clip-level label": "DAiSEE rates whole 10-second clips; every 4-second window of a clip gets the clip's rating, so "
+                        "window labels are approximate.",
+    "Video window": "4 seconds of video (20 frames at 5 frames per second), the amount the vision model reads at once.",
+    "Time segment": "One quarter of a video window (1 second, 5 frames). A vision feature is 'one measurement during one "
+                    "segment', e.g. gaze in the second second.",
+    "Feature (feature × segment)": "One facial measurement in one time segment, e.g. head yaw during 2–3 s. There are 60 "
+                                   "(15 measurements × 4 segments).",
+    "Feature group (face region)": "Measurements that belong together: eyes & blinks, gaze, head pose & position, mouth, brows.",
+    "Blink ratio (eye aspect ratio, EAR)": "How open the eye is: the height of the eye opening divided by its width. It "
+                                           "drops towards 0 during a blink. Measured for the left eye, right eye and their mean.",
+    "Blink event / blink rate": "Blink event = 1 in a frame where a blink is detected, else 0. Blink rate = blinks per "
+                                "minute over the last minute.",
+    "Gaze": "Where the eyes point, estimated from the iris position inside the eye (horizontal and vertical). It is not "
+            "calibrated to the screen, so it is a rough direction, not a screen location.",
+    "Head pose (yaw, pitch, roll)": "Head rotation: yaw = turning left/right, pitch = nodding up/down, roll = tilting "
+                                    "towards a shoulder.",
+    "Face position & scale": "Where the face is in the camera image and how large it appears (closer to the camera = "
+                             "larger). Grouped with head pose.",
+    "Mouth aspect ratio": "How open the mouth is (height of the opening divided by its width), e.g. talking or yawning.",
+    "Brow raise": "How far the eyebrows are lifted above the eyes.",
+    "Schematic face": "A drawn face used instead of real video (DAiSEE's licence does not allow showing students). Each "
+                      "region is coloured by how much its features pushed the prediction.",
+    "Average training frame": "The vision 'zero': every feature at its average value over the training videos "
+                              "(Component 2 standardises features, so this is 0). Used for zero removal and IG's zero reference.",
+    "Donor window (vision)": "A window from a student in the training split; its features fill in hidden ones.",
+    "Subject-disjoint split": "No person appears in both the training and the test data, so test explanations are about "
+                              "people the model never saw (out-of-sample).",
+    "Multimodal fusion": "One model that combines EEG and video from the SAME learners at the SAME time. Not built here: "
+                         "no such paired data exists in the project.",
+    "Cross-context comparison": "Checking whether the same explanation method is the most suitable in both prediction "
+                                "contexts. It compares methods, not modalities.",
+}
+
+
 def page_glossary(run: str):
     st.title("Glossary")
     summary("Every technical word used in this dashboard, explained in one or two sentences.")
     q = st.text_input("Search", "")
-    for k, v in GLOSSARY.items():
-        if q.lower() in (k + v).lower():
+    for title, terms in (("General and EEG", GLOSSARY), ("Computer vision and cross-context", GLOSSARY_VISION)):
+        hits = [(k, v) for k, v in terms.items() if q.lower() in (k + v).lower()]
+        if hits:
+            st.markdown(f"#### {title}")
+        for k, v in hits:
             st.markdown(f"**{k}** — {v}")

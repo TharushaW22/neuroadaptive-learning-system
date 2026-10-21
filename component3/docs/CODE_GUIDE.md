@@ -19,8 +19,9 @@ Paths are relative to `component3/src/xaicomp/` unless stated.
 * **Why:** turns safety rule 1 into code; every file writer calls it.
 
 ### `config.py`
-* `load_c3_config`, `load_c1_config` (read-only), `load_context`, `run_settings(pilot)` (merges the
-  full budget with the pilot overrides and all other configs).
+* `load_c3_config`, `load_c1_config` (read-only), `load_context`, `run_settings(pilot, run_file)` (merges the
+  full budget with the pilot overrides and all other configs; `run_file` = `run.yaml` for EEG,
+  `run_vision.yaml` for vision).
 
 ---
 
@@ -194,4 +195,75 @@ All return an `Explanation` (84 values, f(x), base value, cost, method-specific 
   status colours with icons), banner, summary/how-to/what-does-this-mean helpers.
 * `views_a.py` / `views_b.py`: one function per page, in research order; every page starts with a
   summary generated from the results.
-* `app.py`: navigation, run selector, presentation mode (larger text); errors become friendly messages.
+* `app.py`: sidebar sections Overview / EEG / Computer Vision / Multimodal / Cross-context comparison /
+  Output for Component 4 / Glossary; one run selector for EEG and one for vision; presentation mode;
+  errors become friendly messages.
+* `common.py` also holds the modality-aware wording: `set_modality()` + `V(key)`. The EEG strings are the
+  original text, so the EEG pages are unchanged and the same page functions draw the vision pages.
+* `views_vision.py`: vision Summary / Model & data / Explanations (schematic face coloured by the 5 groups,
+  time-segment chart, region bar chart; no real faces because of the DAiSEE licence), the Multimodal
+  page (why there is no fusion model), Cross-context comparison, project Overview, Component 4 (both
+  contexts). Until vision results exist every vision page shows "Waiting for Component 2's trained model".
+
+---
+
+## 15. Vision context (built ahead, D-V2) — Component 2 is READ-ONLY
+
+### `models/vision_c2.py`
+* **What:** minimal **copies** of C2's `TemporalClassifier` (GRU), `Normalizer` (apply only),
+  `forward_fill_within_video` and window builder, each citing the C2 file and lines. Also the checkpoint
+  checks (`metadata_problems`: real not demo, temporal GRU, `daisee_binary`, 15 features, window 20,
+  normaliser present), `select_model_dir` (newest usable checkpoint), `load_vision_model`
+  (`torch.load(weights_only=True)`) and `randomise_vision` (negative control).
+* **Why copies:** C2's package is called `src` (it would clash on the import path), and importing it
+  would compile bytecode inside component2/. `test_step15_vision_c2_copies.py` loads the original files
+  read-only and shows the outputs are identical.
+
+### `data/vision_data.py`
+* **What:** reads C2's per-clip feature files (only the needed columns; synthetic rows refused),
+  rebuilds the windows exactly as C2 does, applies C2's stored training-split normaliser, maps the levels
+  0–3 to low/high, and checks whether the split is subject-disjoint (`split_check`). The raw windows are
+  cached in `data/processed/vision/`.
+* **Output:** `VisionData` (windows, normalised inputs, labels, split check, source).
+
+### `representation/vision_space.py` — `VisionSpace`
+* 15 features × S time segments (default 4 × 1 s) = 60 features, in feature-major order (like
+  channel × band). Levels: feature_x_segment, feature, segment, group (face regions from the YAML),
+  group_x_segment. `space_from_info()` rebuilds the EEG or vision space from `run_info.json`.
+
+### `replacement/vision_strategies.py`
+* zero = the training mean (0 after standardisation); donor = frames of a train-split window;
+  conditional = Gaussian on the 60 segment means (Ledoit-Wolf), with the donor frames shifted to the
+  drawn means; empirical = nearest donors on the present segment means.
+* `gaussian_suitability()`: fits on 80 % of the training subjects and checks 90 %-interval coverage on
+  the rest, plus the share of discrete dimensions. If the Gaussian fails, Conditional SHAP uses the
+  empirical conditional. The numbers are saved in `run_info.json["conditional_check"]`.
+
+### `adapters/vision_component2.py`
+* **What:** the vision `ModelAdapter`. Instances = C2 **test-split** windows (fold 0). `view()` gives
+  frames (F, S, L), the window mask, K donors from training subjects and `value(masks, replacement)`.
+  `VisionGRUModule` is the differentiable path for IG (frames → GRU → P(high)). `in_sample` is True
+  unless the split is verified subject-disjoint. Robustness noise = 0.1 training SD, not added to
+  blink_event.
+* **Limitation:** window labels are copied from the clip (weak labels); the features are geometric
+  face measurements, not facial action units.
+
+### `adapters/vision_baseline.py`
+* Screening only: C2's scikit-learn baseline (not differentiable → IG screened out). The model file is
+  never unpickled.
+
+### `run/vision_readiness.py` + `scripts/check_vision_ready.py`
+* Ten read-only checks (model, normaliser, loads here, features, splits/labels, subject IDs, subject
+  disjointness, class balance, model vs data). Each check names who must act. Exit code 0 only when
+  vision can run. `run_experiment.py --vision` refuses to start otherwise.
+
+### `compare/cross_context.py` + `scripts/compare_contexts.py`
+* Puts the finished EEG and vision analyses side by side: P(rank 1), expected rank (Kendall's tau,
+  descriptive), reliability decisions per criterion, criterion means, caveats. It compares **method
+  suitability per prediction context** (D-V4), never modalities. It returns "not available" until both
+  rankings exist.
+
+### Export
+* `export/component4.py` adds `modalities` (EEG / vision status: available, available_in_other_run,
+  not_available) and `vision_windows` (top-k group / segment / feature / feature × segment). Both keys
+  are optional, the schema version stays 1.0 and the EEG `windows` format is unchanged.

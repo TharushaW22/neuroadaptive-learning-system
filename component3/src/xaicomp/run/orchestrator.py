@@ -52,6 +52,9 @@ def make_adapter(ctx: dict, threads: int = 1):
     if ctx["adapter"] == "eeg_component1":
         from xaicomp.adapters.eeg_component1 import EEGComponent1Adapter
         return EEGComponent1Adapter(ctx, threads=threads)
+    if ctx["adapter"] == "vision_component2":
+        from xaicomp.adapters.vision_component2 import VisionComponent2Adapter
+        return VisionComponent2Adapter(ctx, threads=threads)
     raise ValueError(f"no adapter for {ctx['adapter']!r} (screening-only contexts are not run)")
 
 
@@ -60,11 +63,11 @@ def methods_for(settings: dict) -> list[str]:
 
 
 # ---------------------------------------------------------------------------------- per instance
-def _init_worker(ctx_name: str, pilot: bool, ctx_root: str) -> None:
+def _init_worker(ctx_name: str, pilot: bool, ctx_root: str, run_file: str = "run.yaml") -> None:
     import torch
     torch.set_num_threads(1)
     ctx = load_context(ctx_name)
-    _W.update(ctx=ctx, settings=run_settings(pilot), root=Path(ctx_root), adapter=make_adapter(ctx, threads=1))
+    _W.update(ctx=ctx, settings=run_settings(pilot, run_file), root=Path(ctx_root), adapter=make_adapter(ctx, threads=1))
 
 
 def _explain_one(ad, iid, method, seed, settings, root, noise_seed=None):
@@ -145,12 +148,20 @@ def process_instance(iid: str) -> dict:
         "y": int(w["y"]), "frac_bad": float(w["frac_bad"]), "p": fx0, "pred_is_target": bool(pred_is_target),
         "confidence": float(max(fx0, 1 - fx0)), "explanations": expl_rows, "fidelity": fid_rows, "curves": curves,
         "stability": [{"method": m, **v} for m, v in stab.items()], "robustness": robust_rows, "noise": flips,
-        "agreement": agree, "self_agreement": self_agree, "local_bp_corr": local_bandpower_correlation(ad, iid),
+        "agreement": agree, "self_agreement": self_agree, "local_bp_corr": local_feature_dependence(ad, iid),
         "seconds_total": time.perf_counter() - t0,
     }
     with open(safe_path(out_path), "w", encoding="utf-8") as f:
         json.dump(rec, f, default=float)
     return {"instance_id": iid, "skipped": False, "seconds": rec["seconds_total"]}
+
+
+def local_feature_dependence(ad, iid: str) -> float:
+    """Feature dependence inside one window (mixed-model covariate): the adapter's own measure if it has
+    one (vision: correlation between the 15 features across frames), else EEG's band-power correlation."""
+    if hasattr(ad, "local_feature_correlation"):
+        return ad.local_feature_correlation(iid)
+    return local_bandpower_correlation(ad, iid)
 
 
 def local_bandpower_correlation(ad, iid: str) -> float:
@@ -177,9 +188,11 @@ def prepare_context(ctx_name: str, settings: dict, run_root: Path, primary_selec
     old = root / "run_info.json"
     if old.exists():                       # never resume into a run made with another model / budget
         prev = json.loads(old.read_text(encoding="utf-8"))
-        if prev.get("model_source") != ad.bank.source or prev.get("budget") != json.loads(json.dumps(settings["budget"], default=str)):
-            raise RuntimeError(f"{root} was created with model source {prev.get('model_source')!r} / another budget; "
-                               "resuming would mix results. Use --run-name <new name> or move the old folder.")
+        ident = ad.model_identity() if hasattr(ad, "model_identity") else None    # vision: which C2 checkpoint
+        if prev.get("model_source") != ad.bank.source or prev.get("budget") != json.loads(json.dumps(settings["budget"], default=str)) \
+                or prev.get("model_identity") != ident:
+            raise RuntimeError(f"{root} was created with model source {prev.get('model_source')!r} / another budget / "
+                               "another checkpoint; resuming would mix results. Use --run-name <new name> or move the old folder.")
     manifest = build_manifest(ad)
     b = settings["budget"]
     if ctx.get("negative_control"):
@@ -201,15 +214,25 @@ def prepare_context(ctx_name: str, settings: dict, run_root: Path, primary_selec
         "label": ("IN-SAMPLE — deployed model trained on all subjects; not for final results" if ad.in_sample else ""),
         "n_instances": int(len(selected)), "n_subjects": int(selected["subject_id"].nunique()),
         "methods": methods_for(settings), "ranked_methods": settings["ranking"]["ranked_methods"],
-        "seeds": settings["budget"]["seeds"], "budget": settings["budget"],
-        "feature_names": ad.space.feature_names, "channels": ad.space.channels, "bands": ad.space.bands,
-        "regions": ad.space.regions, "class_names": ad.class_names, "target_class": ad.target_class,
+        "seeds": settings["budget"]["seeds"], "budget": settings["budget"], "run_file": settings.get("run_file", "run.yaml"),
+        "modality": ctx.get("modality", "eeg"), **space_info(ad.space),
+        "class_names": ad.class_names, "target_class": ad.target_class,
         "created": dt.datetime.now().isoformat(timespec="seconds"), "platform": platform.platform(),
         "python": platform.python_version(),
     }
+    if hasattr(ad, "run_info_extra"):          # vision: model, data source, split check, conditional check
+        info.update(ad.run_info_extra(), model_identity=ad.model_identity())
     with open(safe_path(root / "run_info.json"), "w", encoding="utf-8") as f:
         json.dump(info, f, indent=2, default=str)
     return ctx, root, selected, ad
+
+
+def space_info(space) -> dict:
+    """Interpretable-space fields of run_info.json (EEG keeps its original keys)."""
+    if hasattr(space, "describe"):
+        return space.describe()
+    return {"feature_names": space.feature_names, "channels": space.channels, "bands": space.bands,
+            "regions": space.regions}
 
 
 def run_context(ctx_name: str, settings: dict, run_root: Path, workers: int, primary_selected=None,
@@ -223,7 +246,7 @@ def run_context(ctx_name: str, settings: dict, run_root: Path, workers: int, pri
     done, times = len(ids) - len(todo), []
     if todo:
         with ProcessPoolExecutor(max_workers=workers, mp_context=get_context("spawn"), initializer=_init_worker,
-                                 initargs=(ctx_name, settings["pilot"], str(root))) as pool:
+                                 initargs=(ctx_name, settings["pilot"], str(root), settings.get("run_file", "run.yaml"))) as pool:
             futs = {pool.submit(process_instance, i): i for i in todo}
             for fut in as_completed(futs):
                 iid = futs[fut]
@@ -244,10 +267,16 @@ def run_context(ctx_name: str, settings: dict, run_root: Path, workers: int, pri
     return root, selected
 
 
+def default_run_name(settings: dict) -> str:
+    """pilot / full for EEG (run.yaml); vision_pilot / vision_full for run_vision.yaml (`run_names`)."""
+    names = settings["run"].get("run_names", {"pilot": "pilot", "full": "full"})
+    return names["pilot" if settings["pilot"] else "full"]
+
+
 def run_experiment(pilot: bool, run_name: str | None = None, contexts: list[str] | None = None,
-                   workers: int | None = None, limit: int | None = None, log=print) -> Path:
-    settings = run_settings(pilot)
-    run_root = RESULTS_DIR / (run_name or ("pilot" if pilot else "full"))
+                   workers: int | None = None, limit: int | None = None, log=print, run_file: str = "run.yaml") -> Path:
+    settings = run_settings(pilot, run_file)
+    run_root = RESULTS_DIR / (run_name or default_run_name(settings))
     contexts = contexts or settings["run"]["contexts"]
     workers = workers or int(settings["budget"].get("workers", max(1, min(4, (os.cpu_count() or 2) - 2))))
     primary = None

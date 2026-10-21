@@ -78,11 +78,11 @@ def screen(context_id: str, caps, budgets: dict, ms_per_eval: float | None, max_
             put("feature_space_fit", "pass" if caps.supports_conditional else "fail",
                 "no conditional distribution can be fitted for this feature space")
         elif fa == "actionable":
-            put("feature_space_fit", "fail",
-                "band-limited EEG components are not independently actionable inputs a learner could change")
+            put("feature_space_fit", "fail", caps.notes.get(
+                "not_actionable", "band-limited EEG components are not independently actionable inputs a learner could change"))
         elif fa == "discretisable":
-            put("feature_space_fit", "caution",
-                "rules need discretised features; band components must first be binned")
+            put("feature_space_fit", "caution", caps.notes.get(
+                "binning", "rules need discretised features; band components must first be binned"))
         else:
             put("feature_space_fit", "pass")
         b = budgets.get(m)

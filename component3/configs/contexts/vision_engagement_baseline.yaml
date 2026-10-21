@@ -1,0 +1,12 @@
+# SCREENING-ONLY vision context: Component 2's scikit-learn baseline (window statistics mean/std/min/max
+# x 15 features -> logistic regression or random forest). Shows that Integrated Gradients is screened
+# out (no differentiable path). No explanations are run; the model file is never unpickled.
+context_id: vision/daisee/engagement_binary_baseline
+title: "Vision engagement — scikit-learn baseline (screening only)"
+adapter: vision_component2_baseline
+modality: vision
+screening_only: true
+target_class: high
+component2:
+  models_dir: ../component2/vision_cbu/models
+feature_groups: [eyes_blink, gaze, head_pose, mouth, brows]

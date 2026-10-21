@@ -1,4 +1,5 @@
-// App-wide settings: theme (light/dark), projector mode (larger type) and demo mode.
+// App-wide settings: theme (light/dark), projector mode (larger type), demo mode and the
+// "Advanced" switch (off = simple viva view; on = every technical detail).
 // Remembered per browser in localStorage; every access is guarded because storage can be blocked.
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import { apiReachable, setDemo } from "./api";
@@ -10,6 +11,8 @@ interface Settings {
   setProjector: (v: boolean) => void;
   demo: boolean;
   setDemoMode: (v: boolean) => void;
+  advanced: boolean;
+  setAdvanced: (v: boolean) => void;
   apiOnline: boolean | null;
 }
 
@@ -37,6 +40,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
   );
   const [projector, setProjectorS] = useState(() => load("eeg.projector", false));
   const [demo, setDemoS] = useState(() => load("eeg.demo", false));
+  const [advanced, setAdvancedS] = useState(() => load("eeg.advanced", false));
   const [apiOnline, setApiOnline] = useState<boolean | null>(null);
 
   useEffect(() => {
@@ -69,6 +73,8 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     setProjector: (v) => (setProjectorS(v), save("eeg.projector", v)),
     demo,
     setDemoMode: (v) => (setDemo(v), setDemoS(v), save("eeg.demo", v)),
+    advanced,
+    setAdvanced: (v) => (setAdvancedS(v), save("eeg.advanced", v)),
     apiOnline,
   };
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;

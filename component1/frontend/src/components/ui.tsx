@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import ErrorBoundary from "./ErrorBoundary";
 import type { Flag } from "../lib/types";
 
 export function Card({ title, subtitle, right, children, className = "" }: {
@@ -7,15 +8,15 @@ export function Card({ title, subtitle, right, children, className = "" }: {
   return (
     <section className={`rounded-lg border border-line bg-surface ${className}`}>
       {(title || right) && (
-        <header className="flex flex-wrap items-start justify-between gap-2 border-b border-line px-4 py-3">
+        <header className="flex flex-wrap items-start justify-between gap-3 border-b border-line px-5 py-4">
           <div>
-            {title && <h2 className="text-sm font-semibold text-ink">{title}</h2>}
-            {subtitle && <p className="mt-0.5 text-xs text-ink-3">{subtitle}</p>}
+            {title && <h2 className="text-base font-semibold text-ink">{title}</h2>}
+            {subtitle && <p className="mt-1 text-sm text-ink-3">{subtitle}</p>}
           </div>
           {right}
         </header>
       )}
-      <div className="p-4">{children}</div>
+      <div className="p-5"><ErrorBoundary label={typeof title === "string" ? title : undefined}>{children}</ErrorBoundary></div>
     </section>
   );
 }
@@ -126,5 +127,15 @@ export function Stat({ label, value, sub }: { label: string; value: ReactNode; s
       <div className="num mt-0.5 text-2xl font-medium text-ink">{value}</div>
       {sub && <div className="mt-0.5 text-xs text-ink-3">{sub}</div>}
     </div>
+  );
+}
+
+/** Plain-English caption shown under a panel: "What am I looking at?" + one sentence. */
+export function Explain({ children }: { children: ReactNode }) {
+  return (
+    <p className="mt-4 text-sm leading-relaxed text-ink-3">
+      <span className="font-medium text-ink-2">What am I looking at? </span>
+      {children}
+    </p>
   );
 }

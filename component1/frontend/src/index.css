@@ -75,6 +75,8 @@
 }
 
 html, body, #root { min-height: 100%; }
+/* Slightly larger base type than the browser default so the dashboard reads well in a viva. */
+:root { font-size: 17px; }
 body {
   margin: 0;
   background: var(--bg);
@@ -85,4 +87,4 @@ body {
 .num { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
 
 /* Projector mode: bigger type everywhere (toggle in the header). */
-:root.projector { font-size: 18px; }
+:root.projector { font-size: 20px; }

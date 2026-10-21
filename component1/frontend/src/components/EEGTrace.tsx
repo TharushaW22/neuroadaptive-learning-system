@@ -4,8 +4,8 @@ import { useEffect, useRef } from "react";
 import { CHANNELS } from "../lib/eeg";
 import { DISPLAY_SECONDS, useStream } from "../lib/stream";
 
-export default function EEGTrace({ badChannels = [], interpolated = [], height = 380 }: {
-  badChannels?: string[]; interpolated?: string[]; height?: number;
+export default function EEGTrace({ badChannels = [], interpolated = [], height = 380, simple = false }: {
+  badChannels?: string[]; interpolated?: string[]; height?: number; simple?: boolean;
 }) {
   const canvas = useRef<HTMLCanvasElement>(null);
   const { raw, speed, status } = useStream();
@@ -45,7 +45,7 @@ export default function EEGTrace({ badChannels = [], interpolated = [], height =
           ctx.fillRect(labelW, y, plotW, rowH);
         }
         ctx.fillStyle = bad.current.has(ch) ? col("--bad") : col("--text-2");
-        ctx.font = "500 11px IBM Plex Mono, monospace";
+        ctx.font = "500 12px IBM Plex Mono, monospace";
         ctx.textBaseline = "middle";
         ctx.fillText(ch + (interp.current.has(ch) ? "*" : ""), 4, y + rowH / 2);
       });
@@ -64,7 +64,7 @@ export default function EEGTrace({ badChannels = [], interpolated = [], height =
         ctx.stroke();
         if (s % 2 === 0) {
           ctx.fillStyle = col("--text-3");
-          ctx.font = "10px IBM Plex Mono, monospace";
+          ctx.font = "11px IBM Plex Mono, monospace";
           ctx.fillText(`${s}s`, x + 2, h - 6);
         }
       }
@@ -100,10 +100,14 @@ export default function EEGTrace({ badChannels = [], interpolated = [], height =
   return (
     <div>
       <canvas ref={canvas} style={{ width: "100%", height }} aria-label="Scrolling 14-channel EEG trace" role="img" />
-      <div className="mt-1 flex flex-wrap justify-between gap-2 text-[11px] text-ink-3">
-        <span>Filtered 0.5–45 Hz, shown at 64 Hz · each row ±75 µV (clipped) · grid = 1 s</span>
-        <span>{status === "idle" ? "Press Start to stream a recording" : "red rows = bad channels in the current window · * = interpolated"}</span>
-      </div>
+      {simple ? (
+        status === "idle" && <div className="mt-1 text-sm text-ink-3">Press Start to play a recording.</div>
+      ) : (
+        <div className="mt-1 flex flex-wrap justify-between gap-2 text-xs text-ink-3">
+          <span>Filtered 0.5–45 Hz, shown at 64 Hz · each row ±75 µV (clipped) · grid = 1 s</span>
+          <span>{status === "idle" ? "Press Start to stream a recording" : "red rows = bad channels in the current window · * = interpolated"}</span>
+        </div>
+      )}
     </div>
   );
 }

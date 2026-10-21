@@ -52,5 +52,7 @@ def explain_kernel_shap(view, seed: int, budget: dict, cfg: dict, target: str = 
 
 
 def explain_conditional_shap(view, seed: int, budget: dict, cfg: dict, target: str = "high") -> Explanation:
-    replacement = {"gaussian": "conditional", "empirical": "empirical"}[cfg.get("mode", "gaussian")]
+    # a view may carry a data-driven choice (vision: Gaussian fit check, see replacement/vision_strategies.py)
+    mode = getattr(view, "conditional_mode", None) or cfg.get("mode", "gaussian")
+    replacement = {"gaussian": "conditional", "empirical": "empirical"}[mode]
     return kernel_shap_on(view, replacement, int(budget["nsamples"]), seed, "conditional_shap", target)

@@ -47,13 +47,17 @@ def load_context(name_or_path: str) -> dict[str, Any]:
     return load_yaml(p)
 
 
-def run_settings(pilot: bool) -> dict[str, Any]:
-    """Merged settings for one run: run.yaml 'full' budget, overridden by 'pilot' when pilot=True,
-    plus the explainer / metric / stats / ranking configs."""
-    run = load_c3_config("run.yaml")
+RUN_FILES = {"eeg": "run.yaml", "vision": "run_vision.yaml"}
+
+
+def run_settings(pilot: bool, run_file: str = "run.yaml") -> dict[str, Any]:
+    """Merged settings for one run: `run_file` (run.yaml = EEG, run_vision.yaml = vision) 'full' budget,
+    overridden by 'pilot' when pilot=True, plus the explainer / metric / stats / ranking configs."""
+    run = load_c3_config(run_file)
     budget = deep_merge(run["full"], run["pilot"]) if pilot else copy.deepcopy(run["full"])
     return {
         "pilot": pilot,
+        "run_file": run_file,
         "budget": budget,
         "run": run,
         "explainers": load_c3_config("explainers.yaml"),

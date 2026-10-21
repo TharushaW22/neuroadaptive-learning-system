@@ -71,7 +71,7 @@ def fidelity_degradation(ctx_name: str, ctx_root: Path, settings: dict, ids: lis
     if not ids:
         return pd.DataFrame()
     with ProcessPoolExecutor(max_workers=workers, mp_context=get_context("spawn"), initializer=orch._init_worker,
-                             initargs=(ctx_name, settings["pilot"], str(ctx_root))) as pool:
+                             initargs=(ctx_name, settings["pilot"], str(ctx_root), settings.get("run_file", "run.yaml"))) as pool:
         rows = [r for rs in pool.map(_degradation_task, ids) for r in rs]
     df = pd.DataFrame(rows)
     df["criterion"] = df["mode"].map({"on_manifold": "fidelity_on", "off_manifold": "fidelity_off"})
@@ -212,10 +212,27 @@ def analyse_context(ctx_root: Path, settings: dict, control_root: Path | None, w
     return out
 
 
-def screening_table(run_root: Path, settings: dict) -> pd.DataFrame:
-    """Applicability screening for every configured context (+ the screening-only XGBoost context)."""
+def context_capabilities(ctx: dict):
+    """What a context offers to the screening, from its config only (no model or data is loaded)."""
     from xaicomp.adapters.base import Capabilities
     from xaicomp.adapters.tabular_component1 import tabular_capabilities
+    from xaicomp.adapters.vision_baseline import vision_baseline_capabilities
+
+    if ctx.get("adapter") == "vision_component2_baseline":
+        return vision_baseline_capabilities(ctx)
+    if ctx.get("screening_only"):
+        return tabular_capabilities(ctx)
+    if ctx.get("adapter") == "vision_component2":
+        n = len([f for fs in ctx["groups"].values() for f in fs]) * int(ctx["representation"]["segments"])
+        from xaicomp.adapters.vision_component2 import VISION_SCREENING_NOTES
+        return Capabilities(differentiable=True, n_features=n, model_kind="deep (GRU)", supports_conditional=True,
+                            notes=dict(VISION_SCREENING_NOTES))
+    return Capabilities(differentiable=True, n_features=84, model_kind="deep", supports_conditional=True)
+
+
+def screening_table(run_root: Path, settings: dict) -> pd.DataFrame:
+    """Applicability screening for every configured context (+ the screening-only contexts:
+    C1's XGBoost for EEG, C2's scikit-learn baseline for vision)."""
     from xaicomp.metrics.cost import ms_per_eval
     from xaicomp.screening.applicability import screen
 
@@ -232,10 +249,7 @@ def screening_table(run_root: Path, settings: dict) -> pd.DataFrame:
     budgets = settings["budget"]["budgets"]
     for name in settings["run"]["contexts"] + settings["run"].get("screening_only_contexts", []):
         ctx = load_context(name)
-        if ctx.get("screening_only"):
-            caps = tabular_capabilities(ctx)
-        else:
-            caps = Capabilities(differentiable=True, n_features=84, model_kind="deep", supports_conditional=True)
+        caps = context_capabilities(ctx)
         df = screen(ctx["context_id"], caps, budgets, ms, limit)
         df["screening_only"] = bool(ctx.get("screening_only", False))
         rows.append(df)
@@ -245,13 +259,15 @@ def screening_table(run_root: Path, settings: dict) -> pd.DataFrame:
     return out
 
 
-def analyse_run(run_root: Path, pilot: bool, workers: int | None = None, log=print) -> dict:
+def analyse_run(run_root: Path, pilot: bool, workers: int | None = None, log=print, run_file: str | None = None) -> dict:
     from xaicomp.export.component4 import build_export
 
-    settings = run_settings(pilot)
-    workers = workers or int(settings["budget"].get("workers", 4))
     dirs = sorted(p.parent for p in run_root.glob("*/run_info.json"))
     infos = {d: json.loads((d / "run_info.json").read_text()) for d in dirs}
+    # the run's own budget file (EEG run.yaml, vision run_vision.yaml); old EEG runs did not record it
+    run_file = run_file or next((i["run_file"] for i in infos.values() if i.get("run_file")), "run.yaml")
+    settings = run_settings(pilot, run_file)
+    workers = workers or int(settings["budget"].get("workers", 4))
     control_of = {i["control_of"]: d for d, i in infos.items() if i.get("negative_control")}
     for d in dirs:                                           # tables for every context (incl. control)
         build_tables(d)

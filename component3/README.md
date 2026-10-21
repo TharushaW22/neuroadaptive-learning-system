@@ -25,6 +25,24 @@ anyone's preferred weights (TOPSIS + SMAA), and hands the recommendation to Comp
 8. **Ranking** — TOPSIS under thousands of random weightings (SMAA) → chance of ranking first.
 9. **Output** — a JSON export + Python functions for Component 4, and a dashboard for everyone.
 
+## Vision context (Component 2) — built ahead, waiting for the trained model
+
+The same study is ready for Component 2's vision engagement model: a GRU on 15 facial measurements per
+frame over 4-s windows from DAiSEE, with binary engagement (low = 0–1, high = 2–3). The Component 2
+owner trains it in Component 2's own environment. Component 3 only reads the trained model, its
+normaliser and the extracted features. As soon as they exist:
+
+```bash
+.venv/bin/python scripts/check_vision_ready.py            # what is missing, and who must provide it
+.venv/bin/python scripts/run_experiment.py --vision --pilot
+.venv/bin/python scripts/run_experiment.py --vision
+.venv/bin/python scripts/compare_contexts.py --eeg-run full --vision-run vision_full
+```
+Step by step: `docs/VISION_RUNBOOK.md`. The two contexts are compared only on **how suitable each
+explanation method is** in each prediction context, never on which modality explains a state better.
+There is **no multimodal model**: the project has no EEG and video recorded from the same learners at the
+same time (the dashboard's Multimodal page explains this).
+
 ## Setup (macOS / Linux, Python 3.13)
 
 ```bash
@@ -51,7 +69,7 @@ The full run can be stopped and restarted at any time: finished explanations are
 ## Folders
 
 `configs/` all settings · `src/xaicomp/` the library · `scripts/` entry points · `dashboard/` ·
-`tests/` · `docs/` (PLAN, PROGRESS, CODE_GUIDE, questions_for_team, ai_use_log) ·
+`tests/` · `docs/` (PLAN, PROGRESS, CODE_GUIDE, VISION_RUNBOOK, C2_ANALYSIS, questions_for_team, ai_use_log) ·
 `data/`, `artifacts/` (git-ignored) · `results/<run>/` outputs.
 
 ## Honesty notes
@@ -59,4 +77,6 @@ The full run can be stopped and restarted at any time: finished explanations are
 * Results from the deployed model are **IN-SAMPLE** (it was trained on every subject) and are
   labelled so everywhere; final results need the fold models.
 * PILOT runs use small budgets and are for checking the pipeline only.
-* Component 2 (vision) is not available yet; the adapter interface is ready for it.
+* Vision results do not exist yet: every vision page says "Waiting for Component 2's trained model".
+  Vision results will be labelled IN-SAMPLE unless Component 2's split is verified subject-disjoint.
+* No toy or generated data is ever used as a result; toy fixtures live only in `tests/`.

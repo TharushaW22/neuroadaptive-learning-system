@@ -2,6 +2,11 @@
 
 Component 4 is NOT changed. It can read the JSON file (results/<run>/component4_export.json) or
 call xaicomp.export.component4.recommendation(...) / window_explanation(...) in-process.
+
+Vision (built ahead, D-V2) adds two OPTIONAL keys, so EEG readers are unaffected:
+  modalities      {"eeg": {...}, "vision": {"status": "available" | "available_in_other_run" | "not_available", ...}}
+  vision_windows  per-window explanations of the vision context (top-k face-region group / time segment /
+                  feature x segment), same prediction / trust fields as EEG windows
 """
 
 ATTRIBUTION_ITEM = {
@@ -39,6 +44,35 @@ WINDOW = {
     },
 }
 
+VISION_WINDOW = {   # vision windows go to `vision_windows` so the EEG `windows` format is unchanged
+    "type": "object",
+    "required": ["context_id", "instance_id", "subject_id", "method", "prediction", "top_k", "trust", "in_sample"],
+    "properties": {
+        "context_id": {"type": "string"},
+        "instance_id": {"type": "string"},
+        "subject_id": {"type": "integer"},
+        "participant_id": {"type": "string"},
+        "video_id": {"type": "string"},
+        "t_start_s": {"type": "number"}, "t_end_s": {"type": "number"},
+        "method": {"type": "string"},
+        "prediction": WINDOW["properties"]["prediction"],
+        "top_k": {
+            "type": "object", "required": ["group", "segment", "feature_x_segment"],
+            "properties": {lvl: {"type": "array", "items": ATTRIBUTION_ITEM}
+                           for lvl in ("group", "segment", "feature", "feature_x_segment")}},
+        "trust": WINDOW["properties"]["trust"],
+        "in_sample": {"type": "boolean"},
+    },
+}
+
+MODALITY_STATUS = {
+    "type": "object",
+    "required": ["status"],
+    "properties": {"status": {"enum": ["available", "available_in_other_run", "not_available"]},
+                   "run": {"type": ["string", "null"]}, "context_ids": {"type": "array", "items": {"type": "string"}},
+                   "reason": {"type": "string"}},
+}
+
 CONTEXT = {
     "type": "object",
     "required": ["context_id", "run_type", "in_sample", "recommended_method", "p_rank1", "runner_up",
@@ -46,6 +80,7 @@ CONTEXT = {
     "properties": {
         "context_id": {"type": "string"},
         "title": {"type": "string"},
+        "modality": {"enum": ["eeg", "vision"]},
         "run_type": {"type": "string"},
         "in_sample": {"type": "boolean"},
         "recommended_method": {"type": "string"},
@@ -74,6 +109,9 @@ EXPORT_SCHEMA = {
                 "properties": {"name": {"type": "string"}, "run_type": {"type": "string"}, "pilot": {"type": "boolean"}}},
         "contexts": {"type": "array", "items": CONTEXT},
         "windows": {"type": "array", "items": WINDOW},
+        # optional additions (still schema 1.0: existing readers can ignore them)
+        "vision_windows": {"type": "array", "items": VISION_WINDOW},
+        "modalities": {"type": "object", "properties": {"eeg": MODALITY_STATUS, "vision": MODALITY_STATUS}},
     },
 }
 

@@ -1,4 +1,6 @@
-# The four explainers compared on the SAME 84 channel x band features (14 channels x 6 bands).
+# The four explainers compared on the SAME interpretable features of a context: EEG 84 channel x band
+# features (14 channels x 6 bands); vision 60 feature x time-segment features (15 features x 4 segments).
+# `plain` is the dashboard wording for EEG pages, `plain_vision` for vision pages.
 # Budgets (n samples, K donors, steps) live in run.yaml so the pilot can shrink them.
 # Display colours: Okabe-Ito (colour-blind safe); each method keeps ONE colour everywhere.
 # Validated with the dataviz palette checker (all pairs: CVD dE >= 8.5, normal-vision dE >= 20);
@@ -8,6 +10,7 @@ methods:
   kernel_shap:
     label: KernelSHAP
     plain: "KernelSHAP (fills hidden parts with other people's EEG)"
+    plain_vision: "KernelSHAP (fills hidden parts with other students' video features)"
     family: shapley
     value_function: marginal          # absent component <- donor component (training subjects)
     colour: "#0072B2"                 # blue
@@ -15,6 +18,7 @@ methods:
   conditional_shap:
     label: Conditional SHAP
     plain: "Conditional SHAP (fills hidden parts with realistic, matching EEG)"
+    plain_vision: "Conditional SHAP (fills hidden parts with realistic, matching video features)"
     family: shapley
     value_function: conditional       # absent component <- donor waveform rescaled to a conditional draw
     mode: gaussian                    # gaussian | empirical  (D2; empirical = nearest donors on present features)
@@ -24,6 +28,7 @@ methods:
   lime:
     label: LIME
     plain: "LIME (fits a simple straight-line model around this window)"
+    plain_vision: "LIME (fits a simple straight-line model around this window)"
     family: surrogate
     value_function: marginal
     kernel_width: 25.0                # on cosine distance x 100, as in LIME's text explainer
@@ -32,6 +37,7 @@ methods:
   ig:
     label: Integrated Gradients
     plain: "Integrated Gradients (follows the model's gradients from a reference)"
+    plain_vision: "Integrated Gradients (follows the model's gradients from a reference)"
     family: gradient
     baseline: donor                   # MAIN variant (D3): stochastic donor baselines, expected-gradients style
     colour: "#CC79A7"                 # pink
@@ -39,6 +45,7 @@ methods:
   ig_zero:
     label: "Integrated Gradients (zero baseline)"
     plain: "Integrated Gradients with an all-zero reference (reported separately)"
+    plain_vision: "Integrated Gradients from the average training frame (reported separately)"
     family: gradient
     baseline: zero
     deterministic: true               # its stability is trivially 1 -> never rewarded, never ranked (D3)

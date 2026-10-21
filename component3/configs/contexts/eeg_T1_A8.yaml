@@ -1,0 +1,37 @@
+# PRIMARY context: Component 1's best deep T1 model (rest vs SIMKAP task workload).
+context_id: eeg/T1/A8_cnn_lstm_trans
+title: "EEG workload (rest vs task) — CNN-LSTM-Transformer"
+adapter: eeg_component1
+modality: eeg
+task: workload_binary
+model_name: A8_cnn_lstm_trans            # key in component1/configs/experiments/deep.yaml
+deployed_checkpoint: T1_A8_cnn_lstm_trans
+fold_models_dir: artifacts/fold_models/T1_A8_cnn_lstm_trans
+model_source: auto      # auto = fold models if all 5 exist, else deployed checkpoint (IN-SAMPLE)
+weights: trained        # trained | randomised (negative control)
+target_class: high      # attributions explain P(high workload): + pushes to high, - pushes to low
+
+# Sequence windows: the same 18-s windows C1 scores (8 epochs, stride 2 epochs = 4 s).
+window:
+  seq_len: 8
+  stride_epochs: 2
+
+# Interpretable space: 14 channels x 6 bands = 84 band-limited components of the window.
+representation:
+  bands:                  # delta..gamma = component1 eegengine.features.spectral.BANDS
+    slow: [0.0, 1.0]      # < 1 Hz: NOT one of C1's bands — added because ~2/3 of the cleaned signal's
+                          # power lies here and the model uses it (docs/PROGRESS.md, Step 3). Remove this
+                          # line to get the original 14 x 5 = 70-feature space.
+    delta: [1.0, 4.0]
+    theta: [4.0, 8.0]
+    alpha: [8.0, 13.0]
+    beta: [13.0, 30.0]
+    gamma: [30.0, 45.0]
+  crossover_hz: 1.0       # width of the raised-cosine crossover between adjacent bands
+
+# D5 region grouping (pending confirmation by the Component 1 owner).
+regions:
+  frontal: [AF3, F7, F3, FC5, FC6, F4, F8, AF4]
+  temporal: [T7, T8]
+  parietal: [P7, P8]
+  occipital: [O1, O2]

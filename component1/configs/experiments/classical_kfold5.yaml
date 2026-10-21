@@ -1,0 +1,12 @@
+# Classical models on the SAME 5 subject folds as the deep models (results/folds_5fold.json), so the
+# final comparison table is paired. Also scored on the same 8-epoch sequences (sequence_level).
+features_config: features.yaml
+seed: 42
+cv: kfold5
+tasks: [workload_binary, workload_within_task]
+models: [lr, svm, rf, xgb]
+feature_sets: [all]
+normalisations: [none]
+selection: null
+exclude_bad_windows: false
+n_jobs: 4

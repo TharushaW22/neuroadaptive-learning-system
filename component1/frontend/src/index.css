@@ -1,0 +1,90 @@
+@import "tailwindcss";
+
+/* Dark mode follows the .dark class on <html> (set by the theme toggle). */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* Design tokens — clinical-research look: quiet neutral surfaces, one blue accent.
+   Series colours: low/rest = blue, high/task = orange (validated categorical pair). */
+:root {
+  --bg: #f6f6f4;
+  --surface: #ffffff;
+  --surface-2: #f0efec;
+  --border: #e2e1dc;
+  --text: #16161a;
+  --text-2: #52514e;
+  --text-3: #7a7974;
+  --accent: #1f5fae;
+  --accent-soft: #e6eef9;
+  --series-low: #2a78d6;
+  --series-high: #eb6834;
+  --series-3: #1baf7a;
+  --good: #1a7f4b;
+  --warn: #a86a00;
+  --bad: #c43c3b;
+  --good-soft: #e3f3ea;
+  --warn-soft: #fbf0d9;
+  --bad-soft: #fbe5e4;
+  --grid: #e9e8e4;
+  --trace: #2f3b52;
+  color-scheme: light;
+}
+:root.dark {
+  --bg: #121214;
+  --surface: #1b1b1e;
+  --surface-2: #232327;
+  --border: #303035;
+  --text: #f0efec;
+  --text-2: #c3c2b7;
+  --text-3: #8f8e88;
+  --accent: #5b9be6;
+  --accent-soft: #1d2a3b;
+  --series-low: #3987e5;
+  --series-high: #d95926;
+  --series-3: #199e70;
+  --good: #3fb37a;
+  --warn: #d9a03a;
+  --bad: #e66767;
+  --good-soft: #17301f;
+  --warn-soft: #34290f;
+  --bad-soft: #3a1a1a;
+  --grid: #2a2a2f;
+  --trace: #b8c4dc;
+  color-scheme: dark;
+}
+
+@theme {
+  --font-sans: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, monospace;
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-line: var(--border);
+  --color-ink: var(--text);
+  --color-ink-2: var(--text-2);
+  --color-ink-3: var(--text-3);
+  --color-accent: var(--accent);
+  --color-accent-soft: var(--accent-soft);
+  --color-low: var(--series-low);
+  --color-high: var(--series-high);
+  --color-good: var(--good);
+  --color-warn: var(--warn);
+  --color-bad: var(--bad);
+  --color-good-soft: var(--good-soft);
+  --color-warn-soft: var(--warn-soft);
+  --color-bad-soft: var(--bad-soft);
+}
+
+html, body, #root { min-height: 100%; }
+/* Slightly larger base type than the browser default so the dashboard reads well in a viva. */
+:root { font-size: 17px; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+.num { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+
+/* Projector mode: bigger type everywhere (toggle in the header). */
+:root.projector { font-size: 20px; }

@@ -1,0 +1,25 @@
+# Statistics (Step 11). Unit of analysis = SUBJECT (instances are averaged within subject first).
+alpha: 0.05
+multiple_testing: holm
+bootstrap:
+  n_boot: 2000                # cluster bootstrap: resample subjects with replacement
+  ci: 0.95
+  seed: 7
+
+# Bayesian signed-rank test (Benavoli et al., 2017; baycomp). ROPE = region of practical equivalence:
+# two methods whose subject-level difference lies within +-rope are "practically the same".
+# Widths are on each metric's own scale and are a methodological choice set BEFORE seeing results:
+#  - correlation-type metrics (fidelity gaps are in probability units): 0.01 = one percentage point
+#  - rank correlations (stability, robustness): 0.05
+#  - Gini sparsity: 0.02
+#  - cost: 1 second
+bayes:
+  rope:
+    fidelity_on: 0.01
+    fidelity_off: 0.01
+    stability: 0.05
+    robustness: 0.05
+    sparsity: 0.02
+    cost_seconds: 1.0
+  n_samples: 50000
+  seed: 11

@@ -1,0 +1,20 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "xaicomp"
+version = "0.1.0"
+description = "Comparative XAI evaluation for cognitive-state models (J26-DS-333, Component 3)"
+requires-python = ">=3.11"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q -p no:cacheprovider"
+markers = [
+    "data: needs STEW in data/raw/STEW and the processed data (python scripts/build_data.py)",
+    "slow: takes more than ~20 s",
+]

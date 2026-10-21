@@ -1,0 +1,14 @@
+# Phase 4 classical baselines: every (task x model) on the full feature set, LOSO, no rest baseline.
+# The rest-baseline variants are in classical_rest.yaml (T1, all models) and in the ablation (best
+# model, all tasks) — see docs/decisions.md D14.
+# One results/<experiment_id>/ folder per run, id = cls_<T>_<model>_<feature_set>_<norm>_<cv>.
+features_config: features.yaml
+seed: 42
+cv: loso
+tasks: [workload_binary, workload_within_task, workload_level]
+models: [lr, svm, rf, xgb]
+feature_sets: [all]
+normalisations: [none]
+selection: null              # or {method: kbest, k: 200} / {method: pca, n_components: 0.95}
+exclude_bad_windows: false
+n_jobs: 4                    # = physical cores; 8 caused memory thrashing on a 16 GB laptop

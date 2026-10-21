@@ -1,0 +1,40 @@
+# NEGATIVE CONTROL (D4): the same T1 A8 architecture with RE-INITIALISED weights
+# (model-parameter randomisation test, Adebayo et al., 2018). Explanations of this model should
+# differ from those of the trained model, and fidelity should collapse (the model has no signal).
+# It is part of metric reliability, never ranked as a real context.
+context_id: eeg/T1/A8_cnn_lstm_trans__randomised
+title: "Negative control — A8 with random weights"
+adapter: eeg_component1
+modality: eeg
+task: workload_binary
+model_name: A8_cnn_lstm_trans
+deployed_checkpoint: T1_A8_cnn_lstm_trans
+fold_models_dir: artifacts/fold_models/T1_A8_cnn_lstm_trans
+model_source: auto      # scalers + temperature are taken from the same source as the primary context
+weights: randomised
+randomisation_seed: 1234
+negative_control: true
+control_of: eeg/T1/A8_cnn_lstm_trans
+target_class: high
+
+window:
+  seq_len: 8
+  stride_epochs: 2
+
+representation:
+  bands:
+    slow: [0.0, 1.0]      # < 1 Hz: NOT one of C1's bands — added because ~2/3 of the cleaned signal's
+                          # power lies here and the model uses it (docs/PROGRESS.md, Step 3). Remove this
+                          # line to get the original 14 x 5 = 70-feature space.
+    delta: [1.0, 4.0]
+    theta: [4.0, 8.0]
+    alpha: [8.0, 13.0]
+    beta: [13.0, 30.0]
+    gamma: [30.0, 45.0]
+  crossover_hz: 1.0
+
+regions:
+  frontal: [AF3, F7, F3, FC5, FC6, F4, F8, AF4]
+  temporal: [T7, T8]
+  parietal: [P7, P8]
+  occipital: [O1, O2]

@@ -1,0 +1,36 @@
+{
+  "version": "A8_cnn_lstm_trans-T1-20261019",
+  "task": "workload_binary",
+  "classes": [
+    "low",
+    "high"
+  ],
+  "spec": {
+    "type": "hybrid",
+    "branches": [
+      "cnn",
+      "lstm",
+      "transformer"
+    ],
+    "ablation_id": "A8"
+  },
+  "temperature": 1.1011223225503786,
+  "cv_summary": {
+    "experiment_id": "deep_T1_A8_cnn_lstm_trans_kfold5",
+    "per_fold_macro_f1": {
+      "mean": 0.7729361599545528,
+      "std": 0.04542220708183457,
+      "n_folds": 5
+    },
+    "pooled": {
+      "n": 3264,
+      "macro_f1": 0.7741964176044794,
+      "balanced_accuracy": 0.7748161764705882,
+      "accuracy": 0.7748161764705882,
+      "precision_macro": 0.7778667996870376,
+      "recall_macro": 0.7748161764705882,
+      "auroc": 0.8351306438629373
+    },
+    "ece_after": 0.05252630292784935
+  }
+}

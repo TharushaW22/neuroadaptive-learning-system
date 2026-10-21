@@ -1,0 +1,17 @@
+experiment_id: cls_T3_rf_all_none_kfold5
+kind: classical
+task: workload_within_task
+model: rf
+feature_set: all
+families:
+- spectral
+- entropy
+- wavelet
+- plv
+- coh
+- graph
+normalisation: none
+cv: kfold5
+seed: 42
+selection: null
+exclude_bad_windows: false

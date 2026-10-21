@@ -1,0 +1,29 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.venv/
+venv/
+
+# Data: raw STEW is ~400 MB and redistributed by its authors, processed data is generated
+data/raw/
+data/processed/
+
+# Model checkpoints are small (< 1 MB) and committed so the API works after a clone
+
+# Frontend
+frontend/node_modules/
+frontend/dist/
+
+# OS / editors
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Scratch results (smoke runs, audit permutations, raw logs)
+results/_smoke/
+results/_audit/
+results/logs/
+frontend/.vite/

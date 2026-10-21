@@ -1,0 +1,88 @@
+{
+  "n_subjects": 48,
+  "n_recordings": 96,
+  "shape": [
+    14,
+    19200
+  ],
+  "fs": 128,
+  "channels": [
+    "AF3",
+    "F7",
+    "F3",
+    "FC5",
+    "T7",
+    "P7",
+    "O1",
+    "O2",
+    "P8",
+    "T8",
+    "FC6",
+    "F4",
+    "F8",
+    "AF4"
+  ],
+  "raw_dc_offset_uv": {
+    "mean": 4332.985084388354,
+    "min": 3610.960550520833,
+    "max": 4945.614908854167
+  },
+  "clean_channel_std_uv_median": 22.929435396096036,
+  "subjects_missing_rating": [
+    5,
+    24,
+    42
+  ],
+  "rating_distribution": {
+    "lo": {
+      "1": 23,
+      "2": 12,
+      "3": 7,
+      "4": 2,
+      "5": 1,
+      "6": 0,
+      "7": 0,
+      "8": 0,
+      "9": 0
+    },
+    "hi": {
+      "1": 0,
+      "2": 0,
+      "3": 0,
+      "4": 3,
+      "5": 10,
+      "6": 7,
+      "7": 11,
+      "8": 11,
+      "9": 3
+    }
+  },
+  "level_by_condition": {
+    "lo": {
+      "low": 42,
+      "medium": 3,
+      "high": 0
+    },
+    "hi": {
+      "low": 0,
+      "medium": 20,
+      "high": 25
+    }
+  },
+  "lo_vs_hi_ratings": {
+    "n_subjects_rated": 45,
+    "rest_mean": 1.8,
+    "rest_std": 1.0135446350668171,
+    "rest_median": 1.0,
+    "task_mean": 6.5777777777777775,
+    "task_std": 1.4220486005134363,
+    "task_median": 7.0,
+    "diff_mean": 4.777777777777778,
+    "diff_std": 1.4284271211385058,
+    "n_task_gt_rest": 45,
+    "n_equal": 0,
+    "n_task_lt_rest": 0,
+    "wilcoxon_stat": 0.0,
+    "wilcoxon_p": 4.296699258700829e-09
+  }
+}

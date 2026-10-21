@@ -1,0 +1,21 @@
+# Signal quality assessment (Phase 1). Thresholds are in microvolts after DC removal.
+data:
+  stew_dir: data/raw/STEW
+  cache: data/processed/stew_raw_cache.npz
+
+dc_removal:
+  highpass_hz: 0.5          # zero-phase Butterworth high-pass after mean removal
+
+quality:
+  window_s: 4.0             # same window/step as the Phase 2 epochs
+  step_s: 2.0
+  flat_std_uv: 0.5          # std below this -> flatline (Emotiv LSB is ~0.51 uV)
+  max_abs_uv: 150.0         # |x| above this -> excessive amplitude (blink / movement)
+  var_z_thresh: 3.5         # |robust z| of log-variance across channels
+  hf_band_hz: [30.0, 45.0]  # Emotiv low-passes at ~43 Hz -> measure EMG inside the passband
+  hf_ratio_thresh: 0.25     # P(30-45 Hz) / P(1-45 Hz) -> muscle / EMG (median on STEW ~0.03)
+  line_freq_hz: 50.0        # Sri Lanka mains = 50 Hz
+  line_ratio_thresh: 10.0   # PSD at line freq / flanking PSD
+  max_bad_channels_warn: 2  # <=2 bad channels -> "warn", more -> "bad"
+
+output_dir: results/quality

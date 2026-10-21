@@ -1,0 +1,13 @@
+experiment_id: cls_T1_xgb_A3_spectral_wavelet_rest_baseline_loso
+kind: classical
+task: workload_binary
+model: xgb
+feature_set: A3_spectral_wavelet
+families:
+- spectral
+- wavelet
+normalisation: rest_baseline
+cv: loso
+seed: 42
+selection: null
+exclude_bad_windows: false

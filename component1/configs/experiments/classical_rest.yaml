@@ -1,0 +1,14 @@
+# Phase 4: T1 with the subject rest baseline for every model (the case where it can inflate scores).
+# The rest-baseline variants are in classical_rest.yaml (T1, all models) and in the ablation (best
+# model, all tasks) — see docs/decisions.md D14.
+# One results/<experiment_id>/ folder per run, id = cls_<T>_<model>_<feature_set>_<norm>_<cv>.
+features_config: features.yaml
+seed: 42
+cv: loso
+tasks: [workload_binary]
+models: [lr, svm, rf, xgb]
+feature_sets: [all]
+normalisations: [rest_baseline]
+selection: null              # or {method: kbest, k: 200} / {method: pca, n_components: 0.95}
+exclude_bad_windows: false
+n_jobs: 4                    # = physical cores; 8 caused memory thrashing on a 16 GB laptop

@@ -1,0 +1,58 @@
+experiment_id: deep_T1_A8_cnn_lstm_trans_kfold5
+kind: deep
+task: workload_binary
+model: A8_cnn_lstm_trans
+feature_set: raw_epochs
+normalisation: train_fold_channel_scale
+cv: kfold5
+seed: 42
+model_config:
+  spec:
+    type: hybrid
+    branches:
+    - cnn
+    - lstm
+    - transformer
+    ablation_id: A8
+  model:
+    emb_dim: 64
+    cnn:
+      F1: 8
+      D: 2
+      F2: 16
+      kernel: 32
+      dropout: 0.25
+    lstm_hidden: 64
+    trans_heads: 4
+    trans_layers: 2
+    trans_ff: 128
+    gnn:
+      hidden: 16
+      out_dim: 32
+      heads: 4
+      dropout: 0.1
+    fusion_dim: 64
+    dropout: 0.3
+train_config:
+  train:
+    seq_len: 8
+    test_stride: 2
+    val_stride: 4
+    epoch_items_per_recording: 8
+    epoch_model_multiplier: 4
+    batch_size: 16
+    max_epochs: 25
+    patience: 5
+    lr: 0.001
+    weight_decay: 0.01
+    grad_clip: 1.0
+    val_frac: 0.15
+    clip: 20.0
+    threads: 4
+  augment:
+    noise_std: 0.1
+    channel_dropout: 0.1
+    max_shift: 16
+  input:
+    edge_source: plv
+    edge_band: mean

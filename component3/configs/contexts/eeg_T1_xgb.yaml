@@ -1,0 +1,12 @@
+# OPTIONAL context (D4): Component 1's XGBoost on 1,499 tabular features, grouped into the 6
+# feature families. Used for the applicability SCREENING only (shows that Integrated Gradients is
+# screened out because a tree ensemble is not differentiable). No explanations are run for it.
+context_id: eeg/T1/xgb_all
+title: "EEG workload — XGBoost on 1,499 features (screening only)"
+adapter: eeg_component1_tabular
+modality: eeg
+task: workload_binary
+deployed_checkpoint: T1_xgb_all
+screening_only: true
+feature_groups: [spectral, entropy, wavelet, plv, coh, graph]
+target_class: high

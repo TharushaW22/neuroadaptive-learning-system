@@ -11,7 +11,7 @@ from comparison import _make_algorithms
 from algorithms.baselines import (FixedRules, RandomPolicy,
                                   CognitiveOnlyBandit, PersonalOnlyBandit)
 
-N_EPISODES = 250
+N_EPISODES = 100000 #250
 SEEDS = list(range(10))
 OUT_DIR = "results"
 
